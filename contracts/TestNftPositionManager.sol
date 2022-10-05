@@ -1,0 +1,93 @@
+// Seasonal Token Farm Test NFT Position Manager
+
+//SPDX-License-Identifier: MIT
+pragma solidity 0.7.6;
+pragma abicoder v2;
+
+import '@uniswap/v3-periphery/contracts/libraries/PositionKey.sol';
+import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
+import "./interfaces/ERC721TokenReceiver.sol";
+import "./interfaces/INonFungiblePositionManager.sol";
+
+
+contract TestNftPositionManager is INonFungiblePositionManager {
+
+    uint256 public numberOfTokens;
+
+    mapping(uint => address) public operators;
+    mapping(uint => address) public token0s;
+    mapping(uint => address) public token1s;
+    mapping(uint => uint24) public fees;
+    mapping(uint => int24) public tickLowers;
+    mapping(uint => int24) public tickUppers;
+    mapping(uint => uint128) public liquidityMapping;
+
+    function createLiquidityToken(address operator,
+        address token0,
+        address token1,
+        uint24 fee,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity) public returns (uint256) {
+
+        uint256 tokenId = numberOfTokens;
+
+        operators[tokenId] = operator;
+        token0s[tokenId] = token0;
+        token1s[tokenId] = token1;
+        fees[tokenId] = fee;
+        tickLowers[tokenId] = tickLower;
+        tickUppers[tokenId] = tickUpper;
+        liquidityMapping[tokenId] = liquidity;
+
+        numberOfTokens++;
+
+        return tokenId;
+    }
+
+    function positions(uint256 tokenId)
+    external override
+    view
+    returns (uint96 nonce,
+        address operator,
+        address token0,
+        address token1,
+        uint24 fee,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity,
+        uint256 feeGrowthInside0LastX128,
+        uint256 feeGrowthInside1LastX128,
+        uint128 tokensOwed0,
+        uint128 tokensOwed1) {
+
+        operator = operators[tokenId];
+        token0 = token0s[tokenId];
+        token1 = token1s[tokenId];
+        fee = fees[tokenId];
+        tickLower = tickLowers[tokenId];
+        tickUpper = tickUppers[tokenId];
+        liquidity = liquidityMapping[tokenId];
+
+        return (0, operator, token0, token1, fee,
+        tickLower, tickUpper, liquidity, 0, 0, 0, 0);
+    }
+
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external override {
+        bytes memory data;
+        require(_from == operators[_tokenId], "Only owner can transfer");
+        operators[_tokenId] = _to;
+        if (isContract(_to))
+            require(ERC721TokenReceiver(_to).onERC721Received(operators[_tokenId], _from, _tokenId, data)
+                == bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")),
+                "onERC721Received failed.");
+    }
+
+    function isContract(address _addr) private returns (bool) {
+        uint32 size;
+        assembly {
+            size := extcodesize(_addr)
+        }
+        return (size > 0);
+    }
+}
