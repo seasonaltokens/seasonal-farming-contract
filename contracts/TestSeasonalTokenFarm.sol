@@ -1,6 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.6.5;
 
 import "./interfaces/ERC20.sol";
 import "./interfaces/ERC721TokenReceiver.sol";
@@ -156,7 +155,7 @@ contract TestSeasonalTokenFarm is ERC721TokenReceiver {
         address autumnTokenAddress_,
         address winterTokenAddress_,
         address wethAddress_,
-        uint256 startTime_) {
+        uint256 startTime_) public {
 
         nonFungiblePositionManager = nonFungiblePositionManager_;
 

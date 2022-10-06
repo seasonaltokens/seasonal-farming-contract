@@ -1,6 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-
+pragma solidity ^0.6.5;
 
 import "./interfaces/ERC20.sol";
 import "./interfaces/ERC918.sol";
@@ -81,7 +80,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
 
 
-    constructor() {
+    constructor() public {
 
         miningTarget = MAXIMUM_TARGET / 2 ** 19;
 
@@ -299,7 +298,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         return _getMiningReward(currentTime) * numberOfRewardsToGive;
     }
 
-    function decimals() public pure override returns (uint8) {
+    function decimals() public view override returns (uint8) {
         return DECIMALS;
     }
 
@@ -485,7 +484,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     // ------------------------------------------------------------------------
 
     function safeApproveAndCall(address spender, uint256 previousAllowance,
-        uint256 newAllowance, bytes memory data) external returns (bool success) {
+        uint256 newAllowance, bytes calldata data) external returns (bool success) {
 
         require(allowed[msg.sender][spender] == previousAllowance,
             "Current spender allowance does not match specified value");

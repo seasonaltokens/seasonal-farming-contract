@@ -1,5 +1,5 @@
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.6.5;
+
 
 interface INonFungiblePositionManager {
     function positions(uint256 tokenId)

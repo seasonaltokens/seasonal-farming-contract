@@ -1,8 +1,7 @@
 // Seasonal Token Farm Test NFT Position Manager
 
 //SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.6.5;
 
 import '@uniswap/v3-periphery/contracts/libraries/PositionKey.sol';
 import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
