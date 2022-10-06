@@ -11,19 +11,40 @@ dotenv.config();
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
+const LOW_OPTIMIZER_COMPILER_SETTINGS = {
+  version: '0.7.6',
+  settings: {
+    evmVersion: 'istanbul',
+    optimizer: {
+      enabled: true,
+      runs: 2_000,
+    },
+    metadata: {
+      bytecodeHash: 'none',
+    },
+  },
+}
+
+const DEFAULT_COMPILER_SETTINGS = {
+  version: '0.7.6',
+  settings: {
+    evmVersion: 'istanbul',
+    optimizer: {
+      enabled: true,
+      runs: 1_000_000,
+    },
+    metadata: {
+      bytecodeHash: 'none',
+    },
+  },
+}
+
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [
-      {
-        version: "0.6.5",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      }
-    ],
+    compilers: [DEFAULT_COMPILER_SETTINGS],
+    overrides: {
+      'contracts/NonFungiblePositionManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
+    },
   },
   networks: {
     hardhat: {

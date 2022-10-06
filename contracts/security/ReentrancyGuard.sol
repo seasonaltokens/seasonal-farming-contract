@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (security/ReentrancyGuard.sol)
 
-pragma solidity ^0.6.5;
+pragma solidity =0.7.6;
 
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
@@ -36,7 +36,7 @@ abstract contract ReentrancyGuard {
 
     uint256 private _status;
 
-    constructor() public {
+    constructor() {
         _status = _NOT_ENTERED;
     }
 

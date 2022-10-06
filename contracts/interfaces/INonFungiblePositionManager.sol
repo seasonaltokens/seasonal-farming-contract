@@ -1,7 +1,11 @@
-pragma solidity ^0.6.5;
+// SPDX-License-Identifier: GPL-2.0-or-later
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
+interface INonFungiblePositionManager
+{
+    event Collect(uint256 indexed tokenId, address recipient, uint256 amount0, uint256 amount1);
 
-interface INonFungiblePositionManager {
     function positions(uint256 tokenId)
     external
     view
@@ -20,5 +24,14 @@ interface INonFungiblePositionManager {
         uint128 tokensOwed1
     );
 
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
+    struct CollectParams {
+        uint256 tokenId;
+        address recipient;
+        uint128 amount0Max;
+        uint128 amount1Max;
+    }
+
+    function collect(CollectParams calldata params) external payable returns (uint256 amount0, uint256 amount1);
+
+    function selfSafeTransferFrom(address _from, address _to, uint256 _tokenId) external;
 }

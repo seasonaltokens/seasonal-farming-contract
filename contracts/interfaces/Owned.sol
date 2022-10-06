@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.6.5;
+pragma solidity =0.7.6;
 
 
 
@@ -19,7 +19,7 @@ abstract contract Owned {
     event OwnershipTransferred(address indexed _from, address indexed _to);
 
 
-    constructor() public {
+    constructor() {
 
         owner = msg.sender;
 
