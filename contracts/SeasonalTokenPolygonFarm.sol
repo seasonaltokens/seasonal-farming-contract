@@ -73,7 +73,6 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
 //    UintSet.Set uintSet;
 
     uint256 public constant REALLOCATION_INTERVAL = (365 * 24 * 60 * 60 * 3) / 4; // 9 months
-    address factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     // Liquidity positions must cover the full range of prices
 
