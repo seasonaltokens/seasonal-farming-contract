@@ -1,13 +1,13 @@
+import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, utils } from "ethers";
 import { ethers } from "hardhat";
-import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+
 import { factory, fee } from "./utilities";
 
-//Fixtures
 export async function fixture() {
 
   const [owner, other] = await ethers.getSigners();
-  const startTime = await time.latest() + 120 * 24 * 60 * 60;   //after 1 min, available to start far
+  const startTime = await time.latest() + 120 * 24 * 60 * 60;
 
   const SpringToken = await ethers.getContractFactory('TestSpringToken');
   const springToken = await SpringToken.deploy();
@@ -77,7 +77,6 @@ export async function farmWithDeposit() {
     liquidityTokenId
   );
   await tx.wait();
-
   return farm;
 }
 export async function farmWithDonation() {
@@ -93,6 +92,14 @@ export async function farmWithDonation() {
   await tx2.wait();
 
   return farm;
+}
+
+export async function allocationSizes(farm) {
+  return ([
+    await farm.springAllocationSize(),
+    await farm.summerAllocationSize(),
+    await farm.autumnAllocationSize(),
+    await farm.winterAllocationSize()])
 }
 
 export async function nftPositionManagerWithFourLiquidityTokens() {
@@ -145,10 +152,9 @@ export async function nftPositionManagerWithFourLiquidityTokens() {
 export async function farmWithLiquidityInThreePairs() {
   const { owner, farm } = await loadFixture(fixture);
   const nftPositionManager = await nftPositionManagerWithFourLiquidityTokens();
-  nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0);
-  nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 1);
-  nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 2);
-
+  await nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0);
+  await nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 1);
+  await nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 2);
   return farm;
 }
 

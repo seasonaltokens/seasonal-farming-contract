@@ -42,7 +42,7 @@ contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
         _;
     }
 
-    constructor(address _factory) ERC721Permit("SeasonalFarm Position","SEASONALNFTPOS", "1") {
+    constructor(address _factory) ERC721Permit("SeasonalFarm Position","SFP", "1") {
         factory = _factory;
     }
 

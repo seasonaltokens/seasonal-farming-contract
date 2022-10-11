@@ -2,7 +2,7 @@ import hre, { ethers } from 'hardhat';
 
 async function main() {
 
-  const [owner, test] = await ethers.getSigners();
+  const [owner] = await ethers.getSigners();
 
   const Spring = await ethers.getContractFactory('Spring');
   const spring = await Spring.deploy(owner.address);
