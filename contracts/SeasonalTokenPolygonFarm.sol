@@ -152,7 +152,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
         return tokenOfOwnerByIndex[_liquidityProvider].length;
     }
 
-    function numberOfReAllocations() internal view returns (uint256) {
+    function numberOfReAllocations() public view returns (uint256) {
         if (block.timestamp < startTime + REALLOCATION_INTERVAL)
             return 0;
         uint256 timeSinceStart = block.timestamp - startTime;
@@ -184,7 +184,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
     function getEffectiveTotalAllocationSize(uint256 _totalSpringLiquidity,
                                              uint256 _totalSummerLiquidity,
                                              uint256 _totalAutumnLiquidity,
-                                             uint256 _totalWinterLiquidity) internal view returns (uint256) {
+                                             uint256 _totalWinterLiquidity) public view returns (uint256) {
         uint256 effectiveTotal = 0;
 
         if (_totalSpringLiquidity > 0)

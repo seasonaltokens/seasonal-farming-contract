@@ -13,7 +13,7 @@ import "./interfaces/ERC721TokenReceiver.sol";
 import "./interfaces/INonFungiblePositionManager.sol";
 import "./base/ERC721Permit.sol";
 
-abstract contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
+contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
 
     struct Position {
         uint96 nonce;
@@ -42,7 +42,7 @@ abstract contract TestNftPositionManager is INonFungiblePositionManager, ERC721P
         _;
     }
 
-    constructor(address _factory) {
+    constructor(address _factory) ERC721Permit("SeasonalFarm Position","SEASONALNFTPOS", "1") {
         factory = _factory;
     }
 
@@ -187,5 +187,9 @@ abstract contract TestNftPositionManager is INonFungiblePositionManager, ERC721P
             size := extcodesize(_addr)
         }
         return (size > 0);
+    }
+
+    function _getAndIncrementNonce(uint256 tokenId) internal override returns (uint256) {
+        return uint256(_positions[tokenId].nonce++);
     }
 }

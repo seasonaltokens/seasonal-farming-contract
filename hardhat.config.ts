@@ -71,6 +71,15 @@ const config: HardhatUserConfig = {
       gas: 2100000,
       gasPrice: 8000000000
     },
+    goerli: {
+      url: process.env.GOERLI_URL,
+      accounts: [
+        process.env.PRIVATE_KEY || "",
+        process.env.TEST_WALLET_PRIVATE_KEY || "",
+      ],
+      gas: 2100000,
+      gasPrice: 8000000000
+    },
   },
   paths: {
     sources: "./contracts",
@@ -86,7 +95,7 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.POLYGONSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: "typechain",
