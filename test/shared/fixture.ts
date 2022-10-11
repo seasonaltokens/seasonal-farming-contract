@@ -1,9 +1,7 @@
 import { BigNumber, utils } from "ethers";
-import { MockProvider } from "ethereum-waffle";
-import { ethers, waffle } from "hardhat";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ethers } from "hardhat";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { factory, fee, expandTo18Decimals } from "./utilities";
+import { factory, fee } from "./utilities";
 
 //Fixtures
 export async function fixture() {
@@ -83,7 +81,7 @@ export async function farmWithDeposit() {
   return farm;
 }
 export async function farmWithDonation() {
-  const { owner, other, winterToken } = await loadFixture(fixture);
+  const { owner, winterToken } = await loadFixture(fixture);
   const farm = await farmWithDeposit();
 
   const tx = await winterToken.setBalance(owner.address, utils.parseEther("1.0"));

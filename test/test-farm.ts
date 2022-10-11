@@ -1,6 +1,6 @@
 // eslint-disable-next-line node/no-missing-import
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { ethers, waffle } from "hardhat";
+import { ethers } from "hardhat";
 import { expect } from "chai";
 import { BigNumber, utils } from "ethers";
 import {
@@ -8,7 +8,6 @@ import {
   nftPositionManagerWithLiquidityToken,
   farmWithDeposit,
   farmWithDonation,
-  nftPositionManagerWithFourLiquidityTokens,
   farmWithLiquidityInThreePairs
 } from "./shared/fixture";
 import { expandTo18Decimals, fee, factory } from "./shared/utilities";
@@ -292,7 +291,7 @@ describe("SeasonalToken", async () => {
     });
 
     it("Withdraw", async () => {
-      const { owner, winterToken } = await loadFixture(fixture);
+      const { owner } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
       const liquidityTokenId =
@@ -309,7 +308,7 @@ describe("SeasonalToken", async () => {
     });
 
     it("Revert withdraw not owner", async () => {
-      const { owner, other, winterToken } = await loadFixture(fixture);
+      const { other } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
       const liquidityTokenId =
@@ -321,7 +320,7 @@ describe("SeasonalToken", async () => {
     });
 
     it("Revert withdrawal unavailable", async () => {
-      const { owner, other, winterToken } = await loadFixture(fixture);
+      const { other } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
       const liquidityTokenId =
@@ -331,7 +330,6 @@ describe("SeasonalToken", async () => {
     });
 
     it("Next withdrawal time:", async () => {
-      const { owner, other, winterToken } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
       const liquidityTokenId =
@@ -408,10 +406,5 @@ describe("SeasonalToken", async () => {
       expect(await farm.tokenOfOwnerByIndex(owner.address, 0)).to.equal(BigNumber.from(2));
 
     });
-
-
-
-
   });
-
 });
