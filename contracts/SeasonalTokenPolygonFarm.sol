@@ -158,6 +158,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
         uint256 timeSinceStart = block.timestamp - startTime;
         return timeSinceStart / REALLOCATION_INTERVAL;
     }
+
     function hasDoubledAllocation(uint256 _tokenNumber) internal view returns (uint256) {
         if (numberOfReAllocations() % 4 < _tokenNumber) {
             return 0;

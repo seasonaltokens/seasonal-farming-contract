@@ -1,4 +1,3 @@
-// eslint-disable-next-line node/no-missing-import
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import { expect } from "chai";
@@ -8,27 +7,44 @@ import {
   nftPositionManagerWithLiquidityToken,
   farmWithDeposit,
   farmWithDonation,
-  farmWithLiquidityInThreePairs
+  farmWithLiquidityInThreePairs,
+  allocationSizes
 } from "./shared/fixture";
 import { expandTo18Decimals, fee, factory } from "./shared/utilities";
 
-describe("SeasonalToken", async () => {
-  async function allocation_sizes(farm) {
-    return ([
-      await farm.springAllocationSize(),
-      await farm.summerAllocationSize(),
-      await farm.autumnAllocationSize(),
-      await farm.winterAllocationSize()])
-  }
+describe("Seasonal Token Farm Test", async () => {
 
-  it("Initial total allocation size is ", async () => {
+  it("test_initial_total_allocation_size_is_zero", async () => {
     const { farm } = await loadFixture(fixture);
     expect(await farm.getEffectiveTotalAllocationSize(0, 0, 0, 0)).to.equal(0);
   });
 
-  it("Effective total allocation size is ", async () => {
+  it("test_reallocation", async () => {
     const { farm } = await loadFixture(fixture);
-    expect(await allocation_sizes(farm)).to.deep.equal([BigNumber.from(5), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
+    expect(await farm.numberOfReAllocations()).to.equal(0);
+    expect(await allocationSizes(farm)).to.deep.equal([BigNumber.from(5), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
+    const availableTime = BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL());
+
+    await time.increaseTo(availableTime.add(BigNumber.from(120 * 24 * 60 * 60)));
+    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(1));
+    expect(await allocationSizes(farm)).to.deep.equal([BigNumber.from(10), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
+
+    await time.increaseTo(BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL()));
+    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(2));
+    expect(await allocationSizes(farm)).to.deep.equal([BigNumber.from(10), BigNumber.from(12), BigNumber.from(7), BigNumber.from(8)]);
+
+    await time.increaseTo(BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL()));
+    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(3));
+    expect(await allocationSizes(farm)).to.deep.equal([BigNumber.from(10), BigNumber.from(12), BigNumber.from(14), BigNumber.from(8)]);
+
+    await time.increaseTo(BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL()));
+    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(4));
+    expect(await allocationSizes(farm)).to.deep.equal([BigNumber.from(5), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
+  });
+
+  it("test_effective_total_allocation_size", async () => {
+    const { farm } = await loadFixture(fixture);
+    expect(await allocationSizes(farm)).to.deep.equal([BigNumber.from(5), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
     expect(await farm.getEffectiveTotalAllocationSize(0, 0, 0, 0)).to.equal(0);
     expect(await farm.getEffectiveTotalAllocationSize(1, 0, 0, 0)).to.equal(BigNumber.from(5));
     expect(await farm.getEffectiveTotalAllocationSize(0, 1, 0, 0)).to.equal(BigNumber.from(6));
@@ -37,35 +53,22 @@ describe("SeasonalToken", async () => {
     expect(await farm.getEffectiveTotalAllocationSize(1, 1, 1, 1)).to.equal(BigNumber.from(5 + 6 + 7 + 8));
   });
 
-  it("Reallocations Test", async () => {
-    const { farm } = await loadFixture(fixture);
-    expect(await farm.numberOfReAllocations()).to.equal(0);
-    expect(await allocation_sizes(farm)).to.deep.equal([BigNumber.from(5), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
-    const availableTime = BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL());
+  it("test_revert_donate_with_no_liquidity_in_farm", async () => {
+    const { owner, farm, winterToken } = await loadFixture(fixture);
 
-    await time.increaseTo(availableTime.add(BigNumber.from(120 * 24 * 60 * 60)));
-    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(1));
-    expect(await allocation_sizes(farm)).to.deep.equal([BigNumber.from(10), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
+    const tx = await winterToken.setBalance(owner.address, utils.parseEther("1.0"));
+    await tx.wait();
+    const tx1 = await winterToken.approve(owner.address, utils.parseEther("1.0"));
+    await tx1.wait();
 
-    await time.increaseTo(BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL()));
-    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(2));
-    expect(await allocation_sizes(farm)).to.deep.equal([BigNumber.from(10), BigNumber.from(12), BigNumber.from(7), BigNumber.from(8)]);
-
-    await time.increaseTo(BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL()));
-    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(3));
-    expect(await allocation_sizes(farm)).to.deep.equal([BigNumber.from(10), BigNumber.from(12), BigNumber.from(14), BigNumber.from(8)]);
-
-    await time.increaseTo(BigNumber.from(await time.latest()).add(await farm.REALLOCATION_INTERVAL()));
-    expect(await farm.numberOfReAllocations()).to.equal(BigNumber.from(4));
-    expect(await allocation_sizes(farm)).to.deep.equal([BigNumber.from(5), BigNumber.from(6), BigNumber.from(7), BigNumber.from(8)]);
+    await expect(farm.receiveSeasonalTokens(owner.address, winterToken.address, utils.parseEther("1.0"))).to.be.reverted;
   });
 
-  describe("nftPositionManager", function () {
+  describe("NftPositionManager Test", function () {
 
-    it("Creative Liqudity Token Test", async () => {
+    it("test_create_liquidity_token", async () => {
       const { owner, winterToken, wETH, nftPositionManager } = await loadFixture(fixture);
       expect(await nftPositionManager.numberOfTokens()).to.equal(0);
-      const liquidityTokenId = nftPositionManager.numberOfTokens();
       const tx = await nftPositionManager.createLiquidityToken(
         owner.address,
         wETH.address,
@@ -80,10 +83,10 @@ describe("SeasonalToken", async () => {
       expect(await nftPositionManager.numberOfTokens()).to.equal(1);
     });
 
-    it("Deposit liquidity token test", async () => {
+    it("test_deposit_liquidity_token", async () => {
       const { owner, farm } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
-      const liquidityTokenId = await nftPositionManager.numberOfTokens() - 1;
+      const liquidityTokenId = (await nftPositionManager.numberOfTokens()).sub(BigNumber.from(1));
       const position = await nftPositionManager.positions(liquidityTokenId);
       expect(position.fee).to.equal(fee);
 
@@ -97,7 +100,7 @@ describe("SeasonalToken", async () => {
       expect(await farm.tokenOfOwnerByIndex(owner.address, 0)).to.equal(liquidityTokenId);
     });
 
-    it("Deposit revert wETH not in trading pair", async () => {
+    it("test_deposit_revert_weth_not_in_trading_pair", async () => {
       const { owner, farm, nftPositionManager, springToken, summerToken } = await loadFixture(fixture);
       const tx = await nftPositionManager.createLiquidityToken(
         owner.address,
@@ -119,7 +122,7 @@ describe("SeasonalToken", async () => {
       );
     });
 
-    it("Deposit revert seasonal token not in trading pair", async () => {
+    it("test_deposit_revert_seasonal_token_not_in_trading_pair", async () => {
       const { owner, farm, nftPositionManager, wETH } = await loadFixture(fixture);
       const tx = await nftPositionManager.createLiquidityToken(
         owner.address,
@@ -137,7 +140,7 @@ describe("SeasonalToken", async () => {
       );
     });
 
-    it("Deposit revert not full range", async () => {
+    it("test_deposit_revert_not_full_range", async () => {
       const { owner, farm, nftPositionManager, springToken, wETH } = await loadFixture(fixture);
       const tx = await nftPositionManager.createLiquidityToken(
         owner.address,
@@ -169,7 +172,7 @@ describe("SeasonalToken", async () => {
       );
     });
 
-    it("Deposit revert wrong fee tier", async () => {
+    it("test_deposit_revert_wrong_fee_tier", async () => {
       const { owner, farm, nftPositionManager, wETH, springToken } = await loadFixture(fixture);
       const tx = await nftPositionManager.createLiquidityToken(
         owner.address,
@@ -187,7 +190,7 @@ describe("SeasonalToken", async () => {
       );
     });
 
-    it("Deposit revert not uniswap v3 token", async () => {
+    it("test_deposit_revert_not_uniswap_v3_token", async () => {
       const { owner, farm, springToken, wETH } = await loadFixture(fixture);
       const NftPositionManager2 = await ethers.getContractFactory('TestNftPositionManager');
       const nftPositionManager2 = await NftPositionManager2.deploy(factory);
@@ -209,8 +212,8 @@ describe("SeasonalToken", async () => {
     });
   });
 
-  describe("Farm", function () {
-    it("Donate Test", async () => {
+  describe("Farm Test", function () {
+    it("test_donate", async () => {
       const { owner, winterToken } = await loadFixture(fixture);
       const farm = await farmWithDeposit();
 
@@ -225,7 +228,7 @@ describe("SeasonalToken", async () => {
       expect(await winterToken.balanceOf(farm.address)).to.equal(expandTo18Decimals(1));
     });
 
-    it("Revert donate not seasonal token Test", async () => {
+    it("test_revert_donate_not_seasonal_token", async () => {
       const { owner, wETH } = await loadFixture(fixture);
       const farm = await farmWithDeposit();
 
@@ -239,7 +242,7 @@ describe("SeasonalToken", async () => {
       );
     });
 
-    it("Revert donate not owner", async () => {
+    it("test_revert_donate_not_owner", async () => {
       const { owner, other, winterToken } = await loadFixture(fixture);
       const farm = await farmWithDeposit();
 
@@ -253,7 +256,7 @@ describe("SeasonalToken", async () => {
       );
     });
 
-    it("Tokens available for harvest", async () => {
+    it("test_tokens_available_for_harvest", async () => {
       const { springToken, winterToken } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
@@ -262,10 +265,10 @@ describe("SeasonalToken", async () => {
       expect(await farm.cumulativeTokensFarmedPerUnitLiquidity(winterToken.address, winterToken.address)).to.gt(0);
       expect(await farm.cumulativeTokensFarmedPerUnitLiquidity(springToken.address, winterToken.address)).to.equal(0);
       expect(await farm.cumulativeTokensFarmedPerUnitLiquidity(winterToken.address, springToken.address)).to.equal(0);
-      expect(await farm.getPayoutSizes(liquidityTokenId)[3]).to.not.equal(0);
+      expect((await farm.getPayoutSizes(liquidityTokenId))[3]).to.not.equal(0);
     });
 
-    it("Harvest Test", async () => {
+    it("test_harvest", async () => {
       const { owner, winterToken } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
@@ -280,7 +283,7 @@ describe("SeasonalToken", async () => {
       expect(await farm.getPayoutSizes(liquidityTokenId)).to.deep.equal([BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
     });
 
-    it("Harvest revert not owner", async () => {
+    it("test_harvest_revert_not_owner", async () => {
       const { other } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
@@ -290,7 +293,7 @@ describe("SeasonalToken", async () => {
       await expect(farm.connect(other).harvest(liquidityTokenId)).to.be.reverted;
     });
 
-    it("Withdraw", async () => {
+    it("test_withdraw", async () => {
       const { owner } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
@@ -307,7 +310,7 @@ describe("SeasonalToken", async () => {
       expect(await farm.balanceOf(owner.address)).equal(0);
     });
 
-    it("Revert withdraw not owner", async () => {
+    it("test_revert_withdraw_not_owner", async () => {
       const { other } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
@@ -319,7 +322,7 @@ describe("SeasonalToken", async () => {
       await expect(farm.connect(other).withdraw(liquidityTokenId)).to.be.reverted;
     });
 
-    it("Revert withdrawal unavailable", async () => {
+    it("test_revert_withdrawal_unavailable", async () => {
       const { other } = await loadFixture(fixture);
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
@@ -329,7 +332,7 @@ describe("SeasonalToken", async () => {
       await expect(farm.connect(other).withdraw(liquidityTokenId)).to.be.reverted;
     });
 
-    it("Next withdrawal time:", async () => {
+    it("test_next_withdrawal_time", async () => {
       const nftPositionManager = await nftPositionManagerWithLiquidityToken();
       const farm = await farmWithDonation();
       const liquidityTokenId =
@@ -337,16 +340,21 @@ describe("SeasonalToken", async () => {
 
       const withdrawalUnavailableDays = await farm.WITHDRAWAL_UNAVAILABLE_DAYS();
       const withdrawalAvailableDays = await farm.WITHDRAWAL_AVAILABLE_DAYS();
-      let withdrawalTime = (await farm.liquidityTokens(liquidityTokenId))[2].add(withdrawalUnavailableDays.mul(BigNumber.from(24 * 60 * 60)));
+      let withdrawalTime = (await farm.liquidityTokens(liquidityTokenId))[2];
+      if (typeof withdrawalTime !== 'string') {
+        withdrawalTime = withdrawalTime.add(withdrawalUnavailableDays.mul(BigNumber.from(24 * 60 * 60)));
+      }
       const blockTime = await time.latest();
 
-      while (withdrawalTime.lte(BigNumber.from(blockTime))) {
-        withdrawalTime = (withdrawalTime.add(withdrawalUnavailableDays.add(withdrawalAvailableDays))).mul(BigNumber.from(24 * 60 * 60));
+      while (!(withdrawalTime instanceof BigNumber) || withdrawalTime.lte(BigNumber.from(blockTime))) {
+        if (typeof withdrawalTime !== 'string') {
+          withdrawalTime = (withdrawalTime.add(withdrawalUnavailableDays.add(withdrawalAvailableDays))).mul(BigNumber.from(24 * 60 * 60));
+        }
       }
       expect(await farm.nextWithdrawalTime(liquidityTokenId)).to.equal(withdrawalTime);
     });
 
-    it("Harvest from farm with donations and liquidity in three pairs", async () => {
+    it("test_harvest_from_farm_with_donations_and_liquidity_in_three_pairs", async () => {
       const { owner, springToken, summerToken, autumnToken } = await loadFixture(fixture);
       const farm = await farmWithLiquidityInThreePairs();
 
@@ -382,7 +390,7 @@ describe("SeasonalToken", async () => {
 
     });
 
-    it("Withdraw from farm with liquidity in three pairs", async function () {
+    it("test_withdraw_from_farm_with_liquidity_in_three_pairs", async function () {
       const { owner } = await loadFixture(fixture);
       const farm = await farmWithLiquidityInThreePairs();
 
