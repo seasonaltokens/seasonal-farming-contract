@@ -550,21 +550,21 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
         delete liquidityTokens[_liquidityTokenId];
     }
 
-    function collectAllFees(uint256 tokenId) external returns (uint256 amount0, uint256 amount1) {
+    function collectAllFees(uint256 _tokenId) external returns (uint256 amount0, uint256 amount1) {
         // Caller must own the ERC721 position, meaning it must be a deposit
 
         // set amount0Max and amount1Max to uint256.max to collect all fees
         // alternatively can set recipient to msg.sender and avoid another transaction in `sendToOwner`
         INonFungiblePositionManager.CollectParams memory params =
         INonFungiblePositionManager.CollectParams({
-            tokenId: tokenId,
+            tokenId: _tokenId,
             recipient: address(this),
             amount0Max: type(uint128).max,
             amount1Max: type(uint128).max
         });
 
         (amount0, amount1) = nonFungiblePositionManager.collect(params);
-        _sendToOwner(tokenId, amount0, amount1);
+        _sendToOwner(_tokenId, amount0, amount1);
     }
 
 
