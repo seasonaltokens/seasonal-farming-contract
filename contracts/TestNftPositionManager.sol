@@ -12,8 +12,13 @@ import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
 import "./interfaces/ERC721TokenReceiver.sol";
 import "./interfaces/INonFungiblePositionManager.sol";
 import "./base/ERC721Permit.sol";
+import "./libraries/SafeMath128.sol";
+import "./libraries/SafeMath256.sol";
 
 contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
+
+    using SafeMath256 for uint256;
+    using SafeMath128 for uint128;
 
     struct Position {
         uint96 nonce;
@@ -129,20 +134,20 @@ contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
             (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, ,) =
             pool.positions(PositionKey.compute(address(this), position.tickLower, position.tickUpper));
 
-            tokensOwed0 += uint128(
+            tokensOwed0 = tokensOwed0.add(uint128(
                 FullMath.mulDiv(
-                    feeGrowthInside0LastX128 - position.feeGrowthInside0LastX128,
+                    feeGrowthInside0LastX128.sub(position.feeGrowthInside0LastX128),
                     position.liquidity,
                     FixedPoint128.Q128
                 )
-            );
-            tokensOwed1 += uint128(
+            ));
+            tokensOwed1 = tokensOwed1.add(uint128(
                 FullMath.mulDiv(
-                    feeGrowthInside1LastX128 - position.feeGrowthInside1LastX128,
+                    feeGrowthInside1LastX128.sub(position.feeGrowthInside1LastX128),
                     position.liquidity,
                     FixedPoint128.Q128
                 )
-            );
+            ));
 
             position.feeGrowthInside0LastX128 = feeGrowthInside0LastX128;
             position.feeGrowthInside1LastX128 = feeGrowthInside1LastX128;
@@ -166,7 +171,7 @@ contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
 
         // sometimes there will be a few less wei than expected due to rounding down in core, but we just subtract the full amount expected
         // instead of the actual amount so we can burn the token
-        (position.tokensOwed0, position.tokensOwed1) = (tokensOwed0 - amount0Collect, tokensOwed1 - amount1Collect);
+        (position.tokensOwed0, position.tokensOwed1) = (tokensOwed0.sub(amount0Collect), tokensOwed1.sub(amount1Collect));
 
         emit Collect(params.tokenId, recipient, amount0Collect, amount1Collect);
     }

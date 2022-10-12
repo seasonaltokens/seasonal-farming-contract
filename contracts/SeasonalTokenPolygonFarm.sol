@@ -9,6 +9,7 @@ import "./interfaces/ERC721TokenReceiver.sol";
 import "./interfaces/INonFungiblePositionManager.sol";
 import "./interfaces/TransferHelper.sol";
 import "./libraries/SafeTransferFrom.sol";
+import "./libraries/SafeMath256.sol";
 
 /*
  * Seasonal Token Farm
@@ -71,6 +72,8 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
 
 //    using UintSet for UintSet.Set;
 //    UintSet.Set uintSet;
+
+    using SafeMath256 for uint256;
 
     uint256 public constant REALLOCATION_INTERVAL = (365 * 24 * 60 * 60 * 3) / 4; // 9 months
 
@@ -153,14 +156,14 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
     }
 
     function numberOfReAllocations() public view returns (uint256) {
-        if (block.timestamp < startTime + REALLOCATION_INTERVAL)
+        if (block.timestamp < startTime.add(REALLOCATION_INTERVAL))
             return 0;
-        uint256 timeSinceStart = block.timestamp - startTime;
-        return timeSinceStart / REALLOCATION_INTERVAL;
+        uint256 timeSinceStart = block.timestamp.sub(startTime);
+        return timeSinceStart.div(REALLOCATION_INTERVAL);
     }
 
     function hasDoubledAllocation(uint256 _tokenNumber) internal view returns (uint256) {
-        if (numberOfReAllocations() % 4 < _tokenNumber) {
+        if (numberOfReAllocations().mod(4) < _tokenNumber) {
             return 0;
         }
         return 1;
@@ -189,13 +192,13 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
         uint256 effectiveTotal = 0;
 
         if (_totalSpringLiquidity > 0)
-            effectiveTotal += springAllocationSize();
+            effectiveTotal = effectiveTotal.add(springAllocationSize());
         if (_totalSummerLiquidity > 0)
-            effectiveTotal += summerAllocationSize();
+            effectiveTotal = effectiveTotal.add(summerAllocationSize());
         if (_totalAutumnLiquidity > 0)
-            effectiveTotal += autumnAllocationSize();
+            effectiveTotal = effectiveTotal.add(autumnAllocationSize());
         if (_totalWinterLiquidity > 0)
-            effectiveTotal += winterAllocationSize();
+            effectiveTotal = effectiveTotal.add(winterAllocationSize());
 
         return effectiveTotal;
     }
@@ -214,26 +217,26 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
 
         require(effectiveTotalAllocationSize > 0, "No liquidity in farm");
 
-        uint256 springPairAllocation = (_amount * springAllocationSize()) / effectiveTotalAllocationSize;
-        uint256 summerPairAllocation = (_amount * summerAllocationSize()) / effectiveTotalAllocationSize;
-        uint256 autumnPairAllocation = (_amount * autumnAllocationSize()) / effectiveTotalAllocationSize;
-        uint256 winterPairAllocation = (_amount * winterAllocationSize()) / effectiveTotalAllocationSize;
+        uint256 springPairAllocation = _amount.mul(springAllocationSize()).div(effectiveTotalAllocationSize);
+        uint256 summerPairAllocation = _amount.mul(summerAllocationSize()).div(effectiveTotalAllocationSize);
+        uint256 autumnPairAllocation = _amount.mul(autumnAllocationSize()).div(effectiveTotalAllocationSize);
+        uint256 winterPairAllocation = _amount.mul(winterAllocationSize()).div(effectiveTotalAllocationSize);
 
         if (totalSpringLiquidity > 0)
             cumulativeTokensFarmedPerUnitLiquidity[springTokenAddress][_incomingTokenAddress]
-                += (2 ** 128) * springPairAllocation / totalSpringLiquidity;
+                = cumulativeTokensFarmedPerUnitLiquidity[springTokenAddress][_incomingTokenAddress].add(uint256(2 ** 128).mul(springPairAllocation).div(totalSpringLiquidity));
 
         if (totalSummerLiquidity > 0)
             cumulativeTokensFarmedPerUnitLiquidity[summerTokenAddress][_incomingTokenAddress]
-                += (2 ** 128) * summerPairAllocation / totalSummerLiquidity;
+                =cumulativeTokensFarmedPerUnitLiquidity[summerTokenAddress][_incomingTokenAddress].add(uint256(2 ** 128).mul(summerPairAllocation).div(totalSummerLiquidity));
 
         if (totalAutumnLiquidity > 0)
             cumulativeTokensFarmedPerUnitLiquidity[autumnTokenAddress][_incomingTokenAddress]
-                += (2 ** 128) * autumnPairAllocation / totalAutumnLiquidity;
+                =cumulativeTokensFarmedPerUnitLiquidity[autumnTokenAddress][_incomingTokenAddress].add(uint256(2 ** 128).mul(autumnPairAllocation).div(totalAutumnLiquidity));
 
         if (totalWinterLiquidity > 0)
             cumulativeTokensFarmedPerUnitLiquidity[winterTokenAddress][_incomingTokenAddress]
-                += (2 ** 128) * winterPairAllocation / totalWinterLiquidity;
+                =cumulativeTokensFarmedPerUnitLiquidity[winterTokenAddress][_incomingTokenAddress].add(uint256(2 ** 128).mul(winterPairAllocation).div(totalWinterLiquidity));
     }
 
     function receiveSeasonalTokens(address _from, address _tokenAddress, uint256 _amount) public nonReentrant {
@@ -278,7 +281,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
             = cumulativeTokensFarmedPerUnitLiquidity[liquidityToken.seasonalToken][winterTokenAddress];
 
         liquidityTokens[_liquidityTokenId] = liquidityToken;
-        totalLiquidity[liquidityToken.seasonalToken] += liquidityToken.liquidity;
+        totalLiquidity[liquidityToken.seasonalToken] = totalLiquidity[liquidityToken.seasonalToken].add(liquidityToken.liquidity);
 
         emit Deposit(_from, _liquidityTokenId);
 
@@ -369,11 +372,10 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
             initialCumulativeTokensFarmed = liquidityTokens[_liquidityTokenId].initialCumulativeWinterTokensFarmed;
 
         uint256 tokensFarmedPerUnitLiquiditySinceDeposit
-            = cumulativeTokensFarmedPerUnitLiquidity[_tradingPairSeasonalToken][_farmedSeasonalToken]
-              - initialCumulativeTokensFarmed;
+            = cumulativeTokensFarmedPerUnitLiquidity[_tradingPairSeasonalToken][_farmedSeasonalToken].sub(initialCumulativeTokensFarmed);
 
         return (tokensFarmedPerUnitLiquiditySinceDeposit
-                * liquidityTokens[_liquidityTokenId].liquidity) / (2 ** 128);
+                .mul(liquidityTokens[_liquidityTokenId].liquidity)).div(2 ** 128);
     }
 
     function getPayoutSizes(uint256 _liquidityTokenId) external view returns (uint256, uint256, uint256, uint256) {
@@ -459,29 +461,29 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
 
         uint256 depositTime = liquidityTokens[_liquidityTokenId].depositTime;
         uint256 timeSinceDepositTime = block.timestamp - depositTime;
-        uint256 daysSinceDepositTime = timeSinceDepositTime / (24 * 60 * 60);
+        uint256 daysSinceDepositTime = timeSinceDepositTime.div(24 * 60 * 60);
 
-        return (daysSinceDepositTime) % (WITHDRAWAL_UNAVAILABLE_DAYS + WITHDRAWAL_AVAILABLE_DAYS)
+        return (daysSinceDepositTime).mod(WITHDRAWAL_UNAVAILABLE_DAYS.add(WITHDRAWAL_AVAILABLE_DAYS))
                     >= WITHDRAWAL_UNAVAILABLE_DAYS;
     }
 
     function nextWithdrawalTime(uint256 _liquidityTokenId) external view returns (uint256) {
 
         uint256 depositTime = liquidityTokens[_liquidityTokenId].depositTime;
-        uint256 timeSinceDepositTime = block.timestamp - depositTime;
-        uint256 withdrawalUnavailableTime = WITHDRAWAL_UNAVAILABLE_DAYS * 24 * 60 * 60;
-        uint256 withdrawalAvailableTime = WITHDRAWAL_AVAILABLE_DAYS * 24 * 60 * 60;
+        uint256 timeSinceDepositTime = block.timestamp.sub(depositTime);
+        uint256 withdrawalUnavailableTime = WITHDRAWAL_UNAVAILABLE_DAYS.mul(24 * 60 * 60);
+        uint256 withdrawalAvailableTime = WITHDRAWAL_AVAILABLE_DAYS.mul(24 * 60 * 60);
 
         if (timeSinceDepositTime < withdrawalUnavailableTime)
-            return depositTime + withdrawalUnavailableTime;
+            return depositTime.add(withdrawalUnavailableTime);
 
         uint256 numberOfWithdrawalCyclesUntilNextWithdrawalTime
-                    = 1 + (timeSinceDepositTime - withdrawalUnavailableTime)
-                          / (withdrawalUnavailableTime + withdrawalAvailableTime);
+                    = uint256(1).add(timeSinceDepositTime.sub(withdrawalUnavailableTime))
+                        .div(withdrawalUnavailableTime.add(withdrawalAvailableTime));
 
-        return depositTime + withdrawalUnavailableTime
-                           + numberOfWithdrawalCyclesUntilNextWithdrawalTime
-                             * (withdrawalUnavailableTime + withdrawalAvailableTime);
+        return depositTime.add(withdrawalUnavailableTime)
+                            .add(numberOfWithdrawalCyclesUntilNextWithdrawalTime)
+                            .mul(withdrawalUnavailableTime.add(withdrawalAvailableTime));
     }
 
     function withdraw(uint256 _liquidityTokenId) external {
@@ -497,7 +499,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
          uint256 autumnAmount,
          uint256 winterAmount) = harvestAll(_liquidityTokenId, liquidityToken.seasonalToken);
 
-        totalLiquidity[liquidityToken.seasonalToken] -= liquidityToken.liquidity;
+        totalLiquidity[liquidityToken.seasonalToken] = totalLiquidity[liquidityToken.seasonalToken].sub(liquidityToken.liquidity);
         removeTokenFromListOfOwnedTokens(msg.sender, liquidityToken.position, _liquidityTokenId);
 
         emit Harvest(msg.sender, _liquidityTokenId, springAmount, summerAmount, autumnAmount, winterAmount);
@@ -514,7 +516,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
 
         uint256 length = tokenOfOwnerByIndex[_owner].length;
         if (length > 1) {
-            uint256 liquidityTokenIdOfLastTokenInList = tokenOfOwnerByIndex[_owner][length - 1];
+            uint256 liquidityTokenIdOfLastTokenInList = tokenOfOwnerByIndex[_owner][length.sub(1)];
             LiquidityToken memory lastToken = liquidityTokens[liquidityTokenIdOfLastTokenInList];
             lastToken.position = _index;
             tokenOfOwnerByIndex[_owner][_index] = liquidityTokenIdOfLastTokenInList;

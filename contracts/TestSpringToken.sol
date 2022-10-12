@@ -5,6 +5,7 @@ import "./interfaces/ERC20.sol";
 import "./interfaces/ERC918.sol";
 import "./interfaces/Owned.sol";
 import "./interfaces/ApproveAndCallFallBack.sol";
+import "./libraries/SafeMath256.sol";
 
 // ----------------------------------------------------------------------------
 
@@ -35,6 +36,8 @@ import "./interfaces/ApproveAndCallFallBack.sol";
 
 
 contract TestSpringToken is ERC20Interface, ERC918, Owned {
+
+    using SafeMath256 for uint256;
 
     uint256 public notifiedAllowance;
 
@@ -82,7 +85,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     constructor() public {
 
-        miningTarget = MAXIMUM_TARGET / 2 ** 19;
+        miningTarget = MAXIMUM_TARGET.div(2 ** 19);
 
         contractCreationTime = block.timestamp;
         lastRewardBlockTime = block.timestamp;
@@ -118,11 +121,11 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         if (uint256(digest) > _miningTarget) revert("Digest is larger than mining target");
 
         uint256 _previousMaxNumberOfRewards = maxNumberOfRewardsPerMint;
-        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(_miningTarget / uint256(digest),
+        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(_miningTarget.div(uint256(digest)),
             _lastRewardBlockTime,
             _previousMaxNumberOfRewards,
             block.timestamp);
-        uint256 totalRewardAmount = singleRewardAmount * numberOfRewardsToGive;
+        uint256 totalRewardAmount = singleRewardAmount.add(numberOfRewardsToGive);
 
         uint256 _tokensMinted = _giveRewards(totalRewardAmount);
 
@@ -147,7 +150,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         uint256 currentTime) public pure returns (uint256) {
 
         uint256 numberAvailable = _previousMaxNumberOfRewards;
-        uint256 intervalsSinceLastReward = (currentTime - _lastRewardBlockTime) / REWARD_INTERVAL;
+        uint256 intervalsSinceLastReward = (currentTime.sub(_lastRewardBlockTime)).div(REWARD_INTERVAL);
 
         if (intervalsSinceLastReward > numberAvailable)
             numberAvailable = intervalsSinceLastReward;
@@ -173,8 +176,8 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     function _giveRewards(uint256 totalReward) public returns (uint256) {
 
-        balances[msg.sender] += totalReward;
-        uint256 _tokensMinted = tokensMinted + totalReward;
+        balances[msg.sender] = balances[msg.sender].add(totalReward);
+        uint256 _tokensMinted = tokensMinted.add(totalReward);
         tokensMinted = _tokensMinted;
         return _tokensMinted;
     }
@@ -210,12 +213,12 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         // xor with the number of tokens minted to ensure that the challenge changes
         // even if there are multiple mints in the same ethereum block
 
-        return bytes32(uint256(blockhash(block.number - 1)) ^ _tokensMinted ^ TOKEN_IDENTIFIER);
+        return bytes32(uint256(blockhash(block.number.sub(1))) ^ _tokensMinted ^ TOKEN_IDENTIFIER);
     }
 
 
     function _scheduledNumberOfRewards(uint256 currentTime) public view returns (uint256) {
-        return (currentTime - contractCreationTime) / REWARD_INTERVAL;
+        return (currentTime.sub(contractCreationTime)).div(REWARD_INTERVAL);
     }
 
     function _adjustDifficulty(uint256 _miningTarget,
@@ -223,16 +226,16 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         uint256 rewardsGivenNow,
         uint256 currentTime) public pure returns (uint256){
 
-        uint256 timeSinceLastReward = currentTime - _lastRewardBlockTime;
+        uint256 timeSinceLastReward = currentTime.sub(_lastRewardBlockTime);
 
         // we target a median interval of 10 minutes multiplied by log(2) ~ 61/88
         // this gives a mean interval of 10 minutes per reward
 
-        if (timeSinceLastReward * 88 < rewardsGivenNow * REWARD_INTERVAL * 61)
-            _miningTarget = (_miningTarget * 99) / 100;
+        if (timeSinceLastReward.mul(88) < rewardsGivenNow.mul(REWARD_INTERVAL).mul(61))
+            _miningTarget = _miningTarget.mul(99).div(100);
         // slow down
         else
-            _miningTarget = (_miningTarget * 100) / 99;
+            _miningTarget = _miningTarget.mul(100).div(99);
         // speed up
 
         if (_miningTarget < MINIMUM_TARGET)
@@ -247,16 +250,16 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     function rewardEra(uint256 _time) public view returns (uint256) {
 
-        uint256 timeSinceContractCreation = _time - contractCreationTime;
+        uint256 timeSinceContractCreation = _time.sub(contractCreationTime);
 
         if (timeSinceContractCreation < DURATION_OF_FIRST_ERA)
             return 0;
         else
-            return 1 + (timeSinceContractCreation - DURATION_OF_FIRST_ERA) / DURATION_OF_ERA;
+            return uint256(1).add((timeSinceContractCreation.sub(DURATION_OF_FIRST_ERA)).div(DURATION_OF_ERA));
     }
 
     function getAdjustmentInterval() public view override returns (uint256) {
-        return REWARD_INTERVAL * maxNumberOfRewardsPerMint;
+        return REWARD_INTERVAL.mul(maxNumberOfRewardsPerMint);
     }
 
     function getChallengeNumber() public view override returns (bytes32) {
@@ -266,7 +269,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     function getMiningDifficulty() public view override returns (uint256) {
         // 64 f's:         1234567890123456789012345678901234567890123456789012345678901234
         uint256 maxInt = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-        return maxInt / miningTarget;
+        return maxInt.div(miningTarget);
     }
 
     function getMiningTarget() public view override returns (uint256) {
@@ -281,7 +284,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     }
 
     function _getMiningReward(uint256 _time) public view returns (uint256) {
-        return INITIAL_REWARD / 2 ** rewardEra(_time);
+        return INITIAL_REWARD.div(2 ** rewardEra(_time));
     }
 
     function getNumberOfRewardsAvailable(uint256 currentTime) external view returns (uint256) {
@@ -291,11 +294,11 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     }
 
     function getRewardAmountForAchievingTarget(uint256 targetAchieved, uint256 currentTime) external view returns (uint256) {
-        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(miningTarget / targetAchieved,
+        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(miningTarget.div(targetAchieved),
             lastRewardBlockTime,
             maxNumberOfRewardsPerMint,
             currentTime);
-        return _getMiningReward(currentTime) * numberOfRewardsToGive;
+        return _getMiningReward(currentTime).mul(numberOfRewardsToGive);
     }
 
     function decimals() public view override returns (uint8) {
@@ -337,9 +340,9 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         require(to != address(0), "Invalid address");
         // was require(to != address(0) && to != address(this), "Invalid address");
 
-        balances[msg.sender] = balances[msg.sender] - tokens;
+        balances[msg.sender] = balances[msg.sender].sub(tokens);
 
-        balances[to] = balances[to] + tokens;
+        balances[to] = balances[to].add(tokens);
 
         emit Transfer(msg.sender, to, tokens);
 
@@ -419,11 +422,11 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
         require(to != address(0) && to != address(this), "Invalid address");
 
-        balances[from] = balances[from] - tokens;
+        balances[from] = balances[from].sub(tokens);
 
-        allowed[from][msg.sender] = allowed[from][msg.sender] - tokens;
+        allowed[from][msg.sender] = allowed[from][msg.sender].sub(tokens);
 
-        balances[to] = balances[to] + tokens;
+        balances[to] = balances[to].add(tokens);
 
         emit Transfer(from, to, tokens);
 
