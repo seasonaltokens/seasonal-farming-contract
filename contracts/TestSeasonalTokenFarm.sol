@@ -155,7 +155,7 @@ contract TestSeasonalTokenFarm is ERC721TokenReceiver {
         address autumnTokenAddress_,
         address winterTokenAddress_,
         address wethAddress_,
-        uint256 startTime_) public {
+        uint256 startTime_) {
 
         nonFungiblePositionManager = nonFungiblePositionManager_;
 

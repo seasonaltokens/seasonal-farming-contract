@@ -187,7 +187,7 @@ contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
                 "onERC721Received failed.");
     }
 
-    function isContract(address _addr) private returns (bool) {
+    function isContract(address _addr) public view returns (bool) {
         uint32 size;
         assembly {
             size := extcodesize(_addr)

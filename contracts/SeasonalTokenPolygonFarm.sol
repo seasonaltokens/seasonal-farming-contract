@@ -2,7 +2,6 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import './utils/structs/EnumerableSet.sol';
 import './security/ReentrancyGuard.sol';
 import "./interfaces/IERC20.sol";
 import "./interfaces/IERC721Receiver.sol";

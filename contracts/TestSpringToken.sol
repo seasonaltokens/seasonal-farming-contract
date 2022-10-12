@@ -300,7 +300,7 @@ contract TestSpringToken is IERC20, IERC918, Owned {
         return _getMiningReward(currentTime).mul(numberOfRewardsToGive);
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public pure override returns (uint8) {
         return DECIMALS;
     }
 
