@@ -459,7 +459,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
     function canWithdraw(uint256 _liquidityTokenId) public view returns (bool) {
 
         uint256 depositTime = liquidityTokens[_liquidityTokenId].depositTime;
-        uint256 timeSinceDepositTime = block.timestamp - depositTime;
+        uint256 timeSinceDepositTime = block.timestamp.sub(depositTime);
         uint256 daysSinceDepositTime = timeSinceDepositTime.div(24 * 60 * 60);
 
         return (daysSinceDepositTime).mod(WITHDRAWAL_UNAVAILABLE_DAYS.add(WITHDRAWAL_AVAILABLE_DAYS))
