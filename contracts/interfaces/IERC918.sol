@@ -10,7 +10,7 @@ pragma solidity =0.7.6;
 
 // ----------------------------------------------------------------------------
 
-interface ERC918 {
+interface IERC918 {
 
     function mint(uint256 nonce) external returns (bool success);
 

@@ -10,7 +10,7 @@ pragma solidity =0.7.6;
 
 // ----------------------------------------------------------------------------
 
-abstract contract ERC20Interface {
+abstract contract IERC20 {
 
     function totalSupply() public view virtual returns (uint);
 

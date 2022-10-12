@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity =0.7.6;
 pragma abicoder v2;
+import '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 
-interface INonFungiblePositionManager
+interface INonFungiblePositionManager is IERC721Permit
 {
     event Collect(uint256 indexed tokenId, address recipient, uint256 amount0, uint256 amount1);
 
@@ -33,5 +34,4 @@ interface INonFungiblePositionManager
 
     function collect(CollectParams calldata params) external payable returns (uint256 amount0, uint256 amount1);
 
-    function selfSafeTransferFrom(address _from, address _to, uint256 _tokenId) external;
 }

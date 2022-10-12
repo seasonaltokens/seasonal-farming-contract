@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity =0.7.6;
 
-import "./interfaces/ERC20.sol";
-import "./interfaces/ERC721TokenReceiver.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/IERC721Receiver.sol";
 import "./libraries/SafeTransferFrom.sol";
 
 
@@ -269,7 +269,7 @@ contract TestSeasonalTokenFarm is ERC721TokenReceiver {
 
         emit Donate(from, tokenAddress, amount);
 
-        SafeERC20.safeTransferFrom(ERC20Interface(tokenAddress), from, address(this), amount);
+        SafeERC20.safeTransferFrom(IERC20(tokenAddress), from, address(this), amount);
     }
 
     function onERC721Received(address _operator, address _from, uint256 liquidityTokenId, bytes calldata _data)
@@ -453,13 +453,13 @@ contract TestSeasonalTokenFarm is ERC721TokenReceiver {
         uint256 autumnAmount, uint256 winterAmount) internal {
 
         if (springAmount > 0)
-            ERC20Interface(springTokenAddress).transfer(tokenOwner, springAmount);
+            IERC20(springTokenAddress).transfer(tokenOwner, springAmount);
         if (summerAmount > 0)
-            ERC20Interface(summerTokenAddress).transfer(tokenOwner, summerAmount);
+            IERC20(summerTokenAddress).transfer(tokenOwner, summerAmount);
         if (autumnAmount > 0)
-            ERC20Interface(autumnTokenAddress).transfer(tokenOwner, autumnAmount);
+            IERC20(autumnTokenAddress).transfer(tokenOwner, autumnAmount);
         if (winterAmount > 0)
-            ERC20Interface(winterTokenAddress).transfer(tokenOwner, winterAmount);
+            IERC20(winterTokenAddress).transfer(tokenOwner, winterAmount);
     }
 
     function harvest(uint256 liquidityTokenId) external {

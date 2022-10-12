@@ -90,9 +90,10 @@ describe("Seasonal Token Farm Test", async () => {
       const position = await nftPositionManager.positions(liquidityTokenId);
       expect(position.fee).to.equal(fee);
 
-      const tx = await nftPositionManager.selfSafeTransferFrom(
+      const tx = await nftPositionManager.safeTransferFrom(
         owner.address,
-        farm.address, liquidityTokenId
+        farm.address, 
+        liquidityTokenId
       )
       await tx.wait();
 
@@ -113,7 +114,7 @@ describe("Seasonal Token Farm Test", async () => {
       );
       await tx.wait();
 
-      await expect(nftPositionManager.selfSafeTransferFrom(
+      await expect(nftPositionManager.safeTransferFrom(
         owner.address,
         farm.address,
         0)
@@ -135,7 +136,7 @@ describe("Seasonal Token Farm Test", async () => {
       );
 
       await tx.wait();
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Invalid trading pair"
       );
     });
@@ -164,10 +165,10 @@ describe("Seasonal Token Farm Test", async () => {
       );
       await tx1.wait();
 
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Liquidity must cover full range of prices"
       );
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 1)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 1)).to.be.revertedWith(
         "Liquidity must cover full range of prices"
       );
     });
@@ -185,7 +186,7 @@ describe("Seasonal Token Farm Test", async () => {
       );
       await tx.wait();
 
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Fee tier must be 0.01%"
       );
     });
@@ -206,7 +207,7 @@ describe("Seasonal Token Farm Test", async () => {
         10000000000
       );
       await tx.wait();
-      await expect(nftPositionManager2.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager2.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Only Uniswap v3 liquidity tokens can be deposited"
       );
     });

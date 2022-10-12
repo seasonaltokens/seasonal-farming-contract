@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity =0.7.6;
 
-import "./interfaces/ERC20.sol";
-import "./interfaces/ERC918.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/IERC918.sol";
 import "./interfaces/Owned.sol";
 import "./interfaces/ApproveAndCallFallBack.sol";
 import "./libraries/SafeMath256.sol";
@@ -35,7 +35,7 @@ import "./libraries/SafeMath256.sol";
 
 
 
-contract TestSpringToken is ERC20Interface, ERC918, Owned {
+contract TestSpringToken is IERC20, IERC918, Owned {
 
     using SafeMath256 for uint256;
 
@@ -504,7 +504,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     function transferAnyERC20Token(address tokenAddress, uint256 tokens) external onlyOwner returns (bool success) {
 
-        return ERC20Interface(tokenAddress).transfer(owner, tokens);
+        return IERC20(tokenAddress).transfer(owner, tokens);
 
     }
 

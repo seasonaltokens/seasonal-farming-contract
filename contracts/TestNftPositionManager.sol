@@ -9,9 +9,10 @@ import '@uniswap/v3-core/contracts/libraries/FixedPoint128.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 import '@uniswap/v3-periphery/contracts/libraries/PositionKey.sol';
 import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
-import "./interfaces/ERC721TokenReceiver.sol";
+import '@uniswap/v3-periphery/contracts/base/ERC721Permit.sol';
+
+import "./interfaces/IERC721Receiver.sol";
 import "./interfaces/INonFungiblePositionManager.sol";
-import "./base/ERC721Permit.sol";
 import "./libraries/SafeMath128.sol";
 import "./libraries/SafeMath256.sol";
 
@@ -174,16 +175,6 @@ contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
         (position.tokensOwed0, position.tokensOwed1) = (tokensOwed0.sub(amount0Collect), tokensOwed1.sub(amount1Collect));
 
         emit Collect(params.tokenId, recipient, amount0Collect, amount1Collect);
-    }
-
-    function selfSafeTransferFrom(address _from, address _to, uint256 _tokenId) external override {
-        bytes memory data;
-        require(_from == _positions[_tokenId].operator, "Only owner can transfer");
-        _positions[_tokenId].operator = _to;
-        if (isContract(_to))
-            require(ERC721TokenReceiver(_to).onERC721Received(_positions[_tokenId].operator, _from, _tokenId, data)
-                == bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")),
-                "onERC721Received failed.");
     }
 
     function isContract(address _addr) private returns (bool) {

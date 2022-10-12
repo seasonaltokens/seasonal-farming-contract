@@ -4,8 +4,8 @@ pragma abicoder v2;
 
 import './utils/structs/EnumerableSet.sol';
 import './security/ReentrancyGuard.sol';
-import "./interfaces/ERC20.sol";
-import "./interfaces/ERC721TokenReceiver.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/IERC721Receiver.sol";
 import "./interfaces/INonFungiblePositionManager.sol";
 import "./interfaces/TransferHelper.sol";
 import "./libraries/SafeTransferFrom.sol";
@@ -247,7 +247,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
 
         require(msg.sender == _from, "Tokens must be donated by the address that owns them.");
 
-        SafeERC20.safeTransferFrom(ERC20Interface(_tokenAddress), _from, address(this), _amount);
+        SafeERC20.safeTransferFrom(IERC20(_tokenAddress), _from, address(this), _amount);
 
         allocateIncomingTokensToTradingPairs(_tokenAddress, _amount);
         emit Donate(_from, _tokenAddress, _amount);
@@ -433,13 +433,13 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
                                         uint256 _autumnAmount, uint256 _winterAmount) internal {
 
         if (_springAmount > 0)
-            ERC20Interface(springTokenAddress).transfer(_tokenOwner, _springAmount);
+            IERC20(springTokenAddress).transfer(_tokenOwner, _springAmount);
         if (_summerAmount > 0)
-            ERC20Interface(summerTokenAddress).transfer(_tokenOwner, _summerAmount);
+            IERC20(summerTokenAddress).transfer(_tokenOwner, _summerAmount);
         if (_autumnAmount > 0)
-            ERC20Interface(autumnTokenAddress).transfer(_tokenOwner, _autumnAmount);
+            IERC20(autumnTokenAddress).transfer(_tokenOwner, _autumnAmount);
         if (_winterAmount > 0)
-            ERC20Interface(winterTokenAddress).transfer(_tokenOwner, _winterAmount);
+            IERC20(winterTokenAddress).transfer(_tokenOwner, _winterAmount);
     }
 
     function harvest(uint256 _liquidityTokenId) external {
@@ -506,7 +506,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
         emit Withdraw(msg.sender, _liquidityTokenId);
 
         sendHarvestedTokensToOwner(msg.sender, springAmount, summerAmount, autumnAmount, winterAmount);
-        nonFungiblePositionManager.selfSafeTransferFrom(address(this), liquidityToken.owner, _liquidityTokenId);
+        nonFungiblePositionManager.safeTransferFrom(address(this), liquidityToken.owner, _liquidityTokenId);
     }
 
     function removeTokenFromListOfOwnedTokens(address _owner, uint256 _index, uint256 _liquidityTokenId) internal {

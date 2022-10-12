@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity =0.7.6;
 
-import "../interfaces/ERC20.sol";
+import "../interfaces/IERC20.sol";
 
 // Contract function calls from the OpenZeppelin library
 
@@ -78,7 +78,7 @@ library SafeERC20 {
     using Address for address;
 
     function safeTransferFrom(
-        ERC20Interface token,
+        IERC20 token,
         address from,
         address to,
         uint256 value
@@ -86,7 +86,7 @@ library SafeERC20 {
         _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
     }
 
-    function _callOptionalReturn(ERC20Interface token, bytes memory data) private {
+    function _callOptionalReturn(IERC20 token, bytes memory data) private {
 
         bytes memory returnData = address(token).functionCall(data, "SafeERC20: low-level call failed");
         if (returnData.length > 0) {
