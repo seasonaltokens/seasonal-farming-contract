@@ -2,7 +2,7 @@ import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, utils } from "ethers";
 import { ethers } from "hardhat";
 
-import { factory, fee } from "./utilities";
+import { factory, fee } from "./constants";
 
 export async function fixture() {
 
@@ -71,7 +71,7 @@ export async function farmWithDeposit() {
   const { owner, farm } = await loadFixture(fixture);
   const nftPositionManager = await nftPositionManagerWithLiquidityToken();
   const liquidityTokenId = (await nftPositionManager.numberOfTokens()).sub(BigNumber.from(1));
-  const tx = await nftPositionManager.safeTransferFrom(
+  const tx = await nftPositionManager.selfSafeTransferFrom(
     owner.address,
     farm.address,
     liquidityTokenId
@@ -152,9 +152,9 @@ export async function nftPositionManagerWithFourLiquidityTokens() {
 export async function farmWithLiquidityInThreePairs() {
   const { owner, farm } = await loadFixture(fixture);
   const nftPositionManager = await nftPositionManagerWithFourLiquidityTokens();
-  await nftPositionManager.safeTransferFrom(owner.address, farm.address, 0);
-  await nftPositionManager.safeTransferFrom(owner.address, farm.address, 1);
-  await nftPositionManager.safeTransferFrom(owner.address, farm.address, 2);
+  await nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0);
+  await nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 1);
+  await nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 2);
   return farm;
 }
 

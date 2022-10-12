@@ -82,8 +82,7 @@ contract TestSpringToken is IERC20, IERC918, Owned {
     mapping(address => mapping(address => uint256)) internal allowed;
 
 
-
-    constructor() public {
+    constructor() {
 
         miningTarget = MAXIMUM_TARGET.div(2 ** 19);
 

@@ -137,7 +137,7 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
                  address _autumnTokenAddress,
                  address _winterTokenAddress,
                  address _wethAddress,
-                 uint256 _startTime) public {
+                 uint256 _startTime) {
 
         require(_startTime >= block.timestamp, 'Not validate start_time');
         nonFungiblePositionManager = _nonFungiblePositionManager;
@@ -502,11 +502,36 @@ contract SeasonalTokenFarm is ERC721TokenReceiver, ReentrancyGuard {
         totalLiquidity[liquidityToken.seasonalToken] = totalLiquidity[liquidityToken.seasonalToken].sub(liquidityToken.liquidity);
         removeTokenFromListOfOwnedTokens(msg.sender, liquidityToken.position, _liquidityTokenId);
 
-        emit Harvest(msg.sender, _liquidityTokenId, springAmount, summerAmount, autumnAmount, winterAmount);
-        emit Withdraw(msg.sender, _liquidityTokenId);
-
         sendHarvestedTokensToOwner(msg.sender, springAmount, summerAmount, autumnAmount, winterAmount);
         nonFungiblePositionManager.safeTransferFrom(address(this), liquidityToken.owner, _liquidityTokenId);
+
+        emit Harvest(msg.sender, _liquidityTokenId, springAmount, summerAmount, autumnAmount, winterAmount);
+        emit Withdraw(msg.sender, _liquidityTokenId);
+    }
+
+
+    // This function is only for test
+    function testWithdraw(uint256 _liquidityTokenId) external {
+
+        require(canWithdraw(_liquidityTokenId), "This token cannot be withdrawn at this time");
+
+        LiquidityToken memory liquidityToken = liquidityTokens[_liquidityTokenId];
+
+        require(msg.sender == liquidityToken.owner, "Only owner can withdraw");
+
+        (uint256 springAmount,
+        uint256 summerAmount,
+        uint256 autumnAmount,
+        uint256 winterAmount) = harvestAll(_liquidityTokenId, liquidityToken.seasonalToken);
+
+        totalLiquidity[liquidityToken.seasonalToken] = totalLiquidity[liquidityToken.seasonalToken].sub(liquidityToken.liquidity);
+        removeTokenFromListOfOwnedTokens(msg.sender, liquidityToken.position, _liquidityTokenId);
+
+        sendHarvestedTokensToOwner(msg.sender, springAmount, summerAmount, autumnAmount, winterAmount);
+        nonFungiblePositionManager.selfSafeTransferFrom(address(this), liquidityToken.owner, _liquidityTokenId);
+
+        emit Harvest(msg.sender, _liquidityTokenId, springAmount, summerAmount, autumnAmount, winterAmount);
+        emit Withdraw(msg.sender, _liquidityTokenId);
     }
 
     function removeTokenFromListOfOwnedTokens(address _owner, uint256 _index, uint256 _liquidityTokenId) internal {

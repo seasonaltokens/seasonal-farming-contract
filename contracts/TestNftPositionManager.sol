@@ -177,6 +177,16 @@ contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
         emit Collect(params.tokenId, recipient, amount0Collect, amount1Collect);
     }
 
+    function selfSafeTransferFrom(address _from, address _to, uint256 _tokenId) external override {
+        bytes memory data;
+        require(_from == _positions[_tokenId].operator, "Only owner can transfer");
+        _positions[_tokenId].operator = _to;
+        if (isContract(_to))
+            require(ERC721TokenReceiver(_to).onERC721Received(_positions[_tokenId].operator, _from, _tokenId, data)
+                == bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")),
+                "onERC721Received failed.");
+    }
+
     function isContract(address _addr) private returns (bool) {
         uint32 size;
         assembly {
@@ -188,4 +198,5 @@ contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
     function _getAndIncrementNonce(uint256 tokenId) internal override returns (uint256) {
         return uint256(_positions[tokenId].nonce++);
     }
+
 }

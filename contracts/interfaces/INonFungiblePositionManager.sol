@@ -7,10 +7,7 @@ interface INonFungiblePositionManager is IERC721Permit
 {
     event Collect(uint256 indexed tokenId, address recipient, uint256 amount0, uint256 amount1);
 
-    function positions(uint256 tokenId)
-    external
-    view
-    returns (
+    function positions(uint256 tokenId) external view returns (
         uint96 nonce,
         address operator,
         address token0,
@@ -34,4 +31,5 @@ interface INonFungiblePositionManager is IERC721Permit
 
     function collect(CollectParams calldata params) external payable returns (uint256 amount0, uint256 amount1);
 
+    function selfSafeTransferFrom(address _from, address _to, uint256 _tokenId) external;
 }
