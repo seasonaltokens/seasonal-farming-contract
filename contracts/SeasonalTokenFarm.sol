@@ -128,6 +128,14 @@ contract SeasonalTokenFarm is IERC721Receiver, ReentrancyGuard {
         return 8;
     }
 
+    function lengthOfTokenOfOwnerByIndex(address _owner) public view returns (uint256) {
+        return tokenOfOwnerByIndex[_owner].length();
+    }
+
+    function getValueFromTokenOfOwnerByIndex(address _owner, uint256 _index) public view returns (uint256) {
+        return tokenOfOwnerByIndex[_owner].at(_index);
+    }
+
     function getEffectiveTotalAllocationSize(uint256 _totalSpringLiquidity,
                                              uint256 _totalSummerLiquidity,
                                              uint256 _totalAutumnLiquidity,

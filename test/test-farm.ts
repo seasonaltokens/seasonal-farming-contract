@@ -99,6 +99,8 @@ describe("Seasonal Token Farm Test", async () => {
       await tx.wait();
 
       expect(await farm.balanceOf(owner.address)).to.equal(1);
+      expect(await farm.lengthOfTokenOfOwnerByIndex(owner.address)).to.equal(1);
+      expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 0)).to.equal(liquidityTokenId);
     });
 
     it("test_deposit_revert_weth_not_in_trading_pair", async () => {
@@ -396,17 +398,23 @@ describe("Seasonal Token Farm Test", async () => {
       const farm = await farmWithLiquidityInThreePairs();
 
       expect(await farm.balanceOf(owner.address)).to.equal(BigNumber.from(3));
+      expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 0)).to.equal(0);
+      expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 1)).to.equal(BigNumber.from(1));
+      expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 2)).to.equal(BigNumber.from(2));
 
       await time.increaseTo(BigNumber.from(await time.latest()).add((await farm.WITHDRAWAL_UNAVAILABLE_DAYS()).mul(BigNumber.from(24 * 60 * 60))));
       const tx = await farm.withdraw(0);
       await tx.wait();
 
       expect(await farm.balanceOf(owner.address)).to.equal(BigNumber.from(2));
+      expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 0)).to.equal(BigNumber.from(2));
+      expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 1)).to.equal(BigNumber.from(1));
 
       const tx1 = await farm.withdraw(1);
       await tx1.wait();
 
       expect(await farm.balanceOf(owner.address)).to.equal(BigNumber.from(1));
+      expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 0)).to.equal(BigNumber.from(2));
 
     });
   });
