@@ -37,7 +37,6 @@ struct LiquidityToken {
     uint256 initialCumulativeAutumnTokensFarmed;
     uint256 initialCumulativeWinterTokensFarmed;
     uint256 liquidity;
-    uint256 position;
 }
 
 
@@ -210,7 +209,6 @@ contract SeasonalTokenFarm is IERC721Receiver, ReentrancyGuard {
         liquidityToken.owner = _from;
         liquidityToken.depositTime = block.timestamp;
 
-        liquidityToken.position = tokenOfOwnerByIndex[_from].length();
         tokenOfOwnerByIndex[_from].add(_liquidityTokenId);
 
         liquidityToken.initialCumulativeSpringTokensFarmed
@@ -445,7 +443,7 @@ contract SeasonalTokenFarm is IERC721Receiver, ReentrancyGuard {
          uint256 winterAmount) = harvestAll(_liquidityTokenId, liquidityToken.seasonalToken);
 
         totalLiquidity[liquidityToken.seasonalToken] -= liquidityToken.liquidity;
-        removeTokenFromListOfOwnedTokens(msg.sender, liquidityToken.position, _liquidityTokenId);
+        removeTokenFromListOfOwnedTokens(msg.sender, _liquidityTokenId);
         
         emit Harvest(msg.sender, _liquidityTokenId, springAmount, summerAmount, autumnAmount, winterAmount);
         emit Withdraw(msg.sender, _liquidityTokenId);
@@ -454,8 +452,8 @@ contract SeasonalTokenFarm is IERC721Receiver, ReentrancyGuard {
         nonfungiblePositionManager.safeTransferFrom(address(this), liquidityToken.owner, _liquidityTokenId);
     }
 
-    function removeTokenFromListOfOwnedTokens(address _owner, uint256 _index, uint256 _liquidityTokenId) internal {
-        tokenOfOwnerByIndex[_owner].remove(_index);
+    function removeTokenFromListOfOwnedTokens(address _owner, uint256 _liquidityTokenId) internal {
+        tokenOfOwnerByIndex[_owner].remove(_liquidityTokenId);
         delete liquidityTokens[_liquidityTokenId];
     }
 
