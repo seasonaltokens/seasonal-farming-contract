@@ -128,10 +128,6 @@ contract SeasonalTokenFarm is IERC721Receiver, ReentrancyGuard {
         return 8;
     }
 
-    function lengthOfTokenOfOwnerByIndex(address _owner) public view returns (uint256) {
-        return tokenOfOwnerByIndex[_owner].length();
-    }
-
     function getValueFromTokenOfOwnerByIndex(address _owner, uint256 _index) public view returns (uint256) {
         return tokenOfOwnerByIndex[_owner].at(_index);
     }
@@ -285,24 +281,24 @@ contract SeasonalTokenFarm is IERC721Receiver, ReentrancyGuard {
         return (token0, token1, fee, tickLower, tickUpper, liquidity);
     }
 
-    function setCumulativeSpringTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _springToken) internal {
+    function setCumulativeSpringTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _seasonalToken) internal {
         liquidityTokens[_liquidityTokenId].initialCumulativeSpringTokensFarmed
-            = cumulativeTokensFarmedPerUnitLiquidity[_springToken][springTokenAddress];
+            = cumulativeTokensFarmedPerUnitLiquidity[_seasonalToken][springTokenAddress];
     }
 
-    function setCumulativeSummerTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _summerToken) internal {
+    function setCumulativeSummerTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _seasonalToken) internal {
         liquidityTokens[_liquidityTokenId].initialCumulativeSummerTokensFarmed
-            = cumulativeTokensFarmedPerUnitLiquidity[_summerToken][summerTokenAddress];
+            = cumulativeTokensFarmedPerUnitLiquidity[_seasonalToken][summerTokenAddress];
     }
 
-    function setCumulativeAutumnTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _autumnToken) internal {
+    function setCumulativeAutumnTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _seasonalToken) internal {
         liquidityTokens[_liquidityTokenId].initialCumulativeAutumnTokensFarmed
-            = cumulativeTokensFarmedPerUnitLiquidity[_autumnToken][autumnTokenAddress];
+            = cumulativeTokensFarmedPerUnitLiquidity[_seasonalToken][autumnTokenAddress];
     }
 
-    function setCumulativeWinterTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _winterToken) internal {
+    function setCumulativeWinterTokensFarmedToCurrentValue(uint256 _liquidityTokenId, address _seasonalToken) internal {
         liquidityTokens[_liquidityTokenId].initialCumulativeWinterTokensFarmed
-            = cumulativeTokensFarmedPerUnitLiquidity[_winterToken][winterTokenAddress];
+            = cumulativeTokensFarmedPerUnitLiquidity[_seasonalToken][winterTokenAddress];
     }
 
     function getPayoutSize(uint256 _liquidityTokenId, address _farmedSeasonalToken,

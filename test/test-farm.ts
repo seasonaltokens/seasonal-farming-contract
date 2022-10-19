@@ -99,7 +99,6 @@ describe("Seasonal Token Farm Test", async () => {
       await tx.wait();
 
       expect(await farm.balanceOf(owner.address)).to.equal(1);
-      expect(await farm.lengthOfTokenOfOwnerByIndex(owner.address)).to.equal(1);
       expect(await farm.getValueFromTokenOfOwnerByIndex(owner.address , 0)).to.equal(liquidityTokenId);
     });
 
