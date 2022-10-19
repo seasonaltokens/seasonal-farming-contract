@@ -1,202 +1,91 @@
 // Seasonal Token Farm Test NFT Position Manager
 
 //SPDX-License-Identifier: MIT
-pragma solidity =0.7.6;
+pragma solidity 0.8.5;
 pragma abicoder v2;
 
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-import '@uniswap/v3-core/contracts/libraries/FixedPoint128.sol';
-import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
-import '@uniswap/v3-periphery/contracts/libraries/PositionKey.sol';
-import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
-import '@uniswap/v3-periphery/contracts/base/ERC721Permit.sol';
+import "./interfaces/ERC721TokenReceiver.sol";
+import "./interfaces/INonfungiblePositionManager.sol";
 
-import "./interfaces/IERC721Receiver.sol";
-import "./interfaces/INonFungiblePositionManager.sol";
-import "./libraries/SafeMath128.sol";
-import "./libraries/SafeMath256.sol";
 
-contract TestNftPositionManager is INonFungiblePositionManager, ERC721Permit {
+contract TestNftPositionManager is INonfungiblePositionManager {
 
-    using SafeMath256 for uint256;
-    using SafeMath128 for uint128;
-
-    struct Position {
-        uint96 nonce;
-        address operator;
-        address token0;
-        address token1;
-        uint24 fee;
-        int24 tickLower;
-        int24 tickUpper;
-        // the liquidity of the position
-        uint128 liquidity;
-        // the fee growth of the aggregate position as of the last action on the individual position
-        uint256 feeGrowthInside0LastX128;
-        uint256 feeGrowthInside1LastX128;
-        // how many uncollected tokens are owed to the position, as of the last computation
-        uint128 tokensOwed0;
-        uint128 tokensOwed1;
-    }
-
-    address public immutable factory;
     uint256 public numberOfTokens;
-    mapping(uint256 => Position) private _positions;
+    
+    mapping(uint => address) public operators;
+    mapping(uint => address) public token0s;
+    mapping(uint => address) public token1s;
+    mapping(uint => uint24) public fees;
+    mapping(uint => int24) public tickLowers;
+    mapping(uint => int24) public tickUppers;
+    mapping(uint => uint128) public liquidities;
 
-    modifier isAuthorizedForToken(uint256 tokenId) {
-        require(_isApprovedOrOwner(msg.sender, tokenId), 'Not approved');
-        _;
-    }
+    function createLiquidityToken(address operator, 
+                                  address token0, 
+                                  address token1,
+                                  uint24 fee,
+                                  int24 tickLower, 
+                                  int24 tickUpper,
+                                  uint128 liquidity) public returns (uint256) {
 
-    constructor(address _factory) ERC721Permit("SeasonalFarm Position","SFP", "1") {
-        factory = _factory;
-    }
-
-    function createLiquidityToken(
-        address _operator,
-        address _token0,
-        address _token1,
-        uint24 _fee,
-        int24 _tickLower,
-        int24 _tickUpper,
-        uint128 _liquidity)
-    public returns (uint256) {
         uint256 tokenId = numberOfTokens;
-        _positions[tokenId] = Position({
-            nonce : 0,
-            operator : _operator,
-            token0 : _token0,
-            token1 : _token1,
-            fee : _fee,
-            tickLower : _tickLower,
-            tickUpper : _tickUpper,
-            liquidity : _liquidity,
-            feeGrowthInside0LastX128 : 0,
-            feeGrowthInside1LastX128 : 0,
-            tokensOwed0 : 0,
-            tokensOwed1 : 0
-        });
+
+        operators[tokenId] = operator;
+        token0s[tokenId] = token0;
+        token1s[tokenId] = token1;
+        fees[tokenId] = fee;
+        tickLowers[tokenId] = tickLower;
+        tickUppers[tokenId] = tickUpper;
+        liquidities[tokenId] = liquidity;
+
         numberOfTokens++;
+
         return tokenId;
     }
 
-    function positions(uint256 tokenId) external view override returns (
-        uint96 nonce,
-        address operator,
-        address token0,
-        address token1,
-        uint24 fee,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 liquidity,
-        uint256 feeGrowthInside0LastX128,
-        uint256 feeGrowthInside1LastX128,
-        uint128 tokensOwed0,
-        uint128 tokensOwed1
-    )
-    {
-        Position memory position = _positions[tokenId];
-        return (
-            position.nonce,
-            position.operator,
-            position.token0,
-            position.token1,
-            position.fee,
-            position.tickLower,
-            position.tickUpper,
-            position.liquidity,
-            position.feeGrowthInside0LastX128,
-            position.feeGrowthInside1LastX128,
-            position.tokensOwed0,
-            position.tokensOwed1
-        );
+    function positions(uint256 tokenId)
+        external override 
+        view
+        returns (uint96 nonce,
+                 address operator,
+                 address token0,
+                 address token1,
+                 uint24 fee,
+                 int24 tickLower,
+                 int24 tickUpper,
+                 uint128 liquidity,
+                 uint256 feeGrowthInside0LastX128,
+                 uint256 feeGrowthInside1LastX128,
+                 uint128 tokensOwed0,
+                 uint128 tokensOwed1) {
+
+        operator = operators[tokenId];
+        token0 = token0s[tokenId];
+        token1 = token1s[tokenId];
+        fee = fees[tokenId];
+        tickLower = tickLowers[tokenId];
+        tickUpper = tickUppers[tokenId];
+        liquidity = liquidities[tokenId];
+
+        return (0, operator, token0, token1, fee,
+                tickLower, tickUpper, liquidity, 0, 0, 0, 0);
     }
 
-    function collect(CollectParams calldata params) external payable override isAuthorizedForToken(params.tokenId) returns (uint256 amount0, uint256 amount1)
-    {
-        require(params.amount0Max > 0 || params.amount1Max > 0);
-        // allow collecting to the nft position manager address with address 0
-        address recipient = params.recipient == address(0) ? address(this) : params.recipient;
-
-        Position storage position = _positions[params.tokenId];
-
-        PoolAddress.PoolKey memory poolKey;
-        poolKey.token0 = position.token0;
-        poolKey.token1 = position.token1;
-        poolKey.fee = 100;
-
-        IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
-
-        (uint128 tokensOwed0, uint128 tokensOwed1) = (position.tokensOwed0, position.tokensOwed1);
-
-        // trigger an update of the position fees owed and fee growth snapshots if it has any liquidity
-        if (position.liquidity > 0) {
-            pool.burn(position.tickLower, position.tickUpper, 0);
-            (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, ,) =
-            pool.positions(PositionKey.compute(address(this), position.tickLower, position.tickUpper));
-
-            tokensOwed0 = tokensOwed0.add(uint128(
-                FullMath.mulDiv(
-                    feeGrowthInside0LastX128.sub(position.feeGrowthInside0LastX128),
-                    position.liquidity,
-                    FixedPoint128.Q128
-                )
-            ));
-            tokensOwed1 = tokensOwed1.add(uint128(
-                FullMath.mulDiv(
-                    feeGrowthInside1LastX128.sub(position.feeGrowthInside1LastX128),
-                    position.liquidity,
-                    FixedPoint128.Q128
-                )
-            ));
-
-            position.feeGrowthInside0LastX128 = feeGrowthInside0LastX128;
-            position.feeGrowthInside1LastX128 = feeGrowthInside1LastX128;
-        }
-
-        // compute the arguments to give to the pool#collect method
-        (uint128 amount0Collect, uint128 amount1Collect) =
-        (
-        params.amount0Max > tokensOwed0 ? tokensOwed0 : params.amount0Max,
-        params.amount1Max > tokensOwed1 ? tokensOwed1 : params.amount1Max
-        );
-
-        // the actual amounts collected are returned
-        (amount0, amount1) = pool.collect(
-            recipient,
-            position.tickLower,
-            position.tickUpper,
-            amount0Collect,
-            amount1Collect
-        );
-
-        // sometimes there will be a few less wei than expected due to rounding down in core, but we just subtract the full amount expected
-        // instead of the actual amount so we can burn the token
-        (position.tokensOwed0, position.tokensOwed1) = (tokensOwed0.sub(amount0Collect), tokensOwed1.sub(amount1Collect));
-
-        emit Collect(params.tokenId, recipient, amount0Collect, amount1Collect);
-    }
-
-    function selfSafeTransferFrom(address _from, address _to, uint256 _tokenId) external override {
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external override {
         bytes memory data;
-        require(_from == _positions[_tokenId].operator, "Only owner can transfer");
-        _positions[_tokenId].operator = _to;
+        require(_from == operators[_tokenId], "Only owner can transfer");
+        operators[_tokenId] = _to;
         if (isContract(_to))
-            require(ERC721TokenReceiver(_to).onERC721Received(_positions[_tokenId].operator, _from, _tokenId, data)
-                == bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")),
-                "onERC721Received failed.");
+            require(ERC721TokenReceiver(_to).onERC721Received(operators[_tokenId], _from, _tokenId, data)
+                      == bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")), 
+                    "onERC721Received failed.");
     }
 
-    function isContract(address _addr) public view returns (bool) {
+    function isContract(address _addr) private returns (bool) {
         uint32 size;
         assembly {
             size := extcodesize(_addr)
         }
         return (size > 0);
     }
-
-    function _getAndIncrementNonce(uint256 tokenId) internal override returns (uint256) {
-        return uint256(_positions[tokenId].nonce++);
-    }
-
 }

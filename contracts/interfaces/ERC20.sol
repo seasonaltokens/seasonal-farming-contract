@@ -1,6 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity =0.7.6;
-
+pragma solidity 0.8.5;
 
 // ----------------------------------------------------------------------------
 
@@ -10,7 +9,7 @@ pragma solidity =0.7.6;
 
 // ----------------------------------------------------------------------------
 
-abstract contract IERC20 {
+abstract contract ERC20Interface {
 
     function totalSupply() public view virtual returns (uint);
 

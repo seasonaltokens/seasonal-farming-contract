@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: MIT
-pragma solidity =0.7.6;
+pragma solidity 0.8.5;
+pragma abicoder v2;
 
-import "../interfaces/IERC20.sol";
+import "./interfaces/ERC20.sol";
 
 // Contract function calls from the OpenZeppelin library
 
@@ -44,7 +45,7 @@ library Address {
         require(address(this).balance >= value, "Address: insufficient balance for call");
         require(isContract(target), "Address: call to non-contract");
 
-        (bool success, bytes memory returnData) = target.call{value : value}(data);
+        (bool success, bytes memory returnData) = target.call{value: value}(data);
         return verifyCallResult(success, returnData, errorMessage);
     }
 
@@ -61,8 +62,8 @@ library Address {
                 // The easiest way to bubble the revert reason is using memory via assembly
 
                 assembly {
-                    let returnData_size := mload(returnData)
-                    revert(add(32, returnData), returnData_size)
+                    let returnDataSize := mload(returnData)
+                    revert(add(32, returnData), returnDataSize)
                 }
             } else {
                 revert(errorMessage);
@@ -78,7 +79,7 @@ library SafeERC20 {
     using Address for address;
 
     function safeTransferFrom(
-        IERC20 token,
+        ERC20Interface token,
         address from,
         address to,
         uint256 value
@@ -86,7 +87,7 @@ library SafeERC20 {
         _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
     }
 
-    function _callOptionalReturn(IERC20 token, bytes memory data) private {
+    function _callOptionalReturn(ERC20Interface token, bytes memory data) private {
 
         bytes memory returnData = address(token).functionCall(data, "SafeERC20: low-level call failed");
         if (returnData.length > 0) {
