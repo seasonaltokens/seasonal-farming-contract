@@ -1,5 +1,5 @@
-pragma solidity 0.8.5;
-pragma abicoder v2;
+//SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 interface INonfungiblePositionManager {
     function positions(uint256 tokenId)

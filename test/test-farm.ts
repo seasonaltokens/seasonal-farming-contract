@@ -11,7 +11,7 @@ import {
   allocationSizes
 } from "./shared/fixture";
 import { expandTo18Decimals } from "./shared/utilities";
-import { factory, fee } from './shared/constants';
+import { fee } from './shared/constants';
 
 describe("Seasonal Token Farm Test", async () => {
 
@@ -91,7 +91,7 @@ describe("Seasonal Token Farm Test", async () => {
       const position = await nftPositionManager.positions(liquidityTokenId);
       expect(position.fee).to.equal(fee);
 
-      const tx = await nftPositionManager.selfSafeTransferFrom(
+      const tx = await nftPositionManager.safeTransferFrom(
         owner.address,
         farm.address, 
         liquidityTokenId
@@ -99,7 +99,6 @@ describe("Seasonal Token Farm Test", async () => {
       await tx.wait();
 
       expect(await farm.balanceOf(owner.address)).to.equal(1);
-      expect(await farm.tokenOfOwnerByIndex(owner.address, 0)).to.equal(liquidityTokenId);
     });
 
     it("test_deposit_revert_weth_not_in_trading_pair", async () => {
@@ -115,7 +114,7 @@ describe("Seasonal Token Farm Test", async () => {
       );
       await tx.wait();
 
-      await expect(nftPositionManager.selfSafeTransferFrom(
+      await expect(nftPositionManager.safeTransferFrom(
         owner.address,
         farm.address,
         0)
@@ -137,7 +136,7 @@ describe("Seasonal Token Farm Test", async () => {
       );
 
       await tx.wait();
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Invalid trading pair"
       );
     });
@@ -166,10 +165,10 @@ describe("Seasonal Token Farm Test", async () => {
       );
       await tx1.wait();
 
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Liquidity must cover full range of prices"
       );
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 1)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 1)).to.be.revertedWith(
         "Liquidity must cover full range of prices"
       );
     });
@@ -187,7 +186,7 @@ describe("Seasonal Token Farm Test", async () => {
       );
       await tx.wait();
 
-      await expect(nftPositionManager.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Fee tier must be 0.01%"
       );
     });
@@ -195,7 +194,7 @@ describe("Seasonal Token Farm Test", async () => {
     it("test_deposit_revert_not_uniswap_v3_token", async () => {
       const { owner, farm, springToken, wETH } = await loadFixture(fixture);
       const NftPositionManager2 = await ethers.getContractFactory('TestNftPositionManager');
-      const nftPositionManager2 = await NftPositionManager2.deploy(factory);
+      const nftPositionManager2 = await NftPositionManager2.deploy();
       await nftPositionManager2.deployed();
 
       const tx = await nftPositionManager2.createLiquidityToken(
@@ -208,7 +207,7 @@ describe("Seasonal Token Farm Test", async () => {
         10000000000
       );
       await tx.wait();
-      await expect(nftPositionManager2.selfSafeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
+      await expect(nftPositionManager2.safeTransferFrom(owner.address, farm.address, 0)).to.be.revertedWith(
         "Only Uniswap v3 liquidity tokens can be deposited"
       );
     });
@@ -306,7 +305,7 @@ describe("Seasonal Token Farm Test", async () => {
 
       await time.increaseTo(BigNumber.from(await time.latest()).add((await farm.WITHDRAWAL_UNAVAILABLE_DAYS()).mul(BigNumber.from(24 * 60 * 60))));
 
-      const tx = await farm.testWithdraw(liquidityTokenId);
+      const tx = await farm.withdraw(liquidityTokenId);
       await tx.wait();
 
       expect(await farm.balanceOf(owner.address)).equal(0);
@@ -397,23 +396,17 @@ describe("Seasonal Token Farm Test", async () => {
       const farm = await farmWithLiquidityInThreePairs();
 
       expect(await farm.balanceOf(owner.address)).to.equal(BigNumber.from(3));
-      expect(await farm.tokenOfOwnerByIndex(owner.address, 0)).to.equal(0);
-      expect(await farm.tokenOfOwnerByIndex(owner.address, 1)).to.equal(BigNumber.from(1));
-      expect(await farm.tokenOfOwnerByIndex(owner.address, 2)).to.equal(BigNumber.from(2));
 
       await time.increaseTo(BigNumber.from(await time.latest()).add((await farm.WITHDRAWAL_UNAVAILABLE_DAYS()).mul(BigNumber.from(24 * 60 * 60))));
-      const tx = await farm.testWithdraw(0);
+      const tx = await farm.withdraw(0);
       await tx.wait();
 
       expect(await farm.balanceOf(owner.address)).to.equal(BigNumber.from(2));
-      expect(await farm.tokenOfOwnerByIndex(owner.address, 0)).to.equal(BigNumber.from(2));
-      expect(await farm.tokenOfOwnerByIndex(owner.address, 1)).to.equal(BigNumber.from(1));
 
-      const tx1 = await farm.testWithdraw(1);
+      const tx1 = await farm.withdraw(1);
       await tx1.wait();
 
       expect(await farm.balanceOf(owner.address)).to.equal(BigNumber.from(1));
-      expect(await farm.tokenOfOwnerByIndex(owner.address, 0)).to.equal(BigNumber.from(2));
 
     });
   });

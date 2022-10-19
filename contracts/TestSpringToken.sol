@@ -1,11 +1,11 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.5;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./interfaces/ERC20.sol";
-import "./interfaces/ERC918.sol";
-import "./interfaces/Owned.sol";
-import "./interfaces/ApproveAndCallFallBack.sol";
+import "./interfaces/IERC918.sol";
+import "./interfaces/IApproveAndCallFallBack.sol";
 
 // ----------------------------------------------------------------------------
 
@@ -35,7 +35,7 @@ import "./interfaces/ApproveAndCallFallBack.sol";
 
 
 
-contract TestSpringToken is ERC20Interface, ERC918, Owned {
+contract TestSpringToken is IERC20, IERC918, Ownable {
 
     uint256 public notifiedAllowance;
 
@@ -469,7 +469,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
         emit Approval(msg.sender, spender, tokens);
 
-        ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, address(this), data);
+        IApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, address(this), data);
 
         return true;
 
@@ -482,7 +482,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     // ------------------------------------------------------------------------
 
-    function safeApproveAndCall(address spender, uint256 previousAllowance, 
+    function safeApproveAndCall(address spender, uint256 previousAllowance,
                                 uint256 newAllowance, bytes memory data) external returns (bool success) {
 
         require(allowed[msg.sender][spender] == previousAllowance,
@@ -500,7 +500,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     function transferAnyERC20Token(address tokenAddress, uint256 tokens) external onlyOwner returns (bool success) {
 
-        return ERC20Interface(tokenAddress).transfer(owner, tokens);
+        return IERC20(tokenAddress).transfer(owner(), tokens);
 
     }
 
