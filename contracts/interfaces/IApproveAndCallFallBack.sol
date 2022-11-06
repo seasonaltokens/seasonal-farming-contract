@@ -1,7 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity =0.7.6;
-
-
+pragma solidity 0.8.5;
 
 // ----------------------------------------------------------------------------
 
@@ -11,7 +9,7 @@ pragma solidity =0.7.6;
 
 // ----------------------------------------------------------------------------
 
-abstract contract ApproveAndCallFallBack {
+abstract contract IApproveAndCallFallBack {
 
     function receiveApproval(address from, uint256 tokens, address token, bytes memory data) public virtual;
 

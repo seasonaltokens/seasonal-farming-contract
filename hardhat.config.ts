@@ -8,25 +8,8 @@ import "solidity-coverage";
 
 dotenv.config();
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
-
-const LOW_OPTIMIZER_COMPILER_SETTINGS = {
-  version: '0.7.6',
-  settings: {
-    evmVersion: 'istanbul',
-    optimizer: {
-      enabled: true,
-      runs: 2_000,
-    },
-    metadata: {
-      bytecodeHash: 'none',
-    },
-  },
-}
-
 const DEFAULT_COMPILER_SETTINGS = {
-  version: '0.7.6',
+  version: '0.8.5',
   settings: {
     evmVersion: 'istanbul',
     optimizer: {
@@ -42,9 +25,6 @@ const DEFAULT_COMPILER_SETTINGS = {
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [DEFAULT_COMPILER_SETTINGS],
-    overrides: {
-      'contracts/NonFungiblePositionManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
-    },
   },
   networks: {
     hardhat: {
@@ -71,6 +51,15 @@ const config: HardhatUserConfig = {
       gas: 2100000,
       gasPrice: 8000000000
     },
+    goerli: {
+      url: process.env.GOERLI_URL,
+      accounts: [
+        process.env.PRIVATE_KEY || "",
+        process.env.TEST_WALLET_PRIVATE_KEY || "",
+      ],
+      gas: 2100000,
+      gasPrice: 8000000000
+    },
   },
   paths: {
     sources: "./contracts",
@@ -86,7 +75,7 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.POLYGONSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: "typechain",

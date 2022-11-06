@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity =0.7.6;
+pragma solidity ^0.8.0;
 
 
 // ----------------------------------------------------------------------------
@@ -10,7 +10,7 @@ pragma solidity =0.7.6;
 
 // ----------------------------------------------------------------------------
 
-interface ERC918 {
+interface IERC918 {
 
     function mint(uint256 nonce) external returns (bool success);
 

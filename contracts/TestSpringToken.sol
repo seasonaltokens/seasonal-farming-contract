@@ -1,10 +1,11 @@
 //SPDX-License-Identifier: MIT
-pragma solidity =0.7.6;
+pragma solidity 0.8.5;
 
-import "./interfaces/ERC20.sol";
-import "./interfaces/ERC918.sol";
-import "./interfaces/Owned.sol";
-import "./interfaces/ApproveAndCallFallBack.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import "./interfaces/IERC918.sol";
+import "./interfaces/IApproveAndCallFallBack.sol";
 
 // ----------------------------------------------------------------------------
 
@@ -34,7 +35,7 @@ import "./interfaces/ApproveAndCallFallBack.sol";
 
 
 
-contract TestSpringToken is ERC20Interface, ERC918, Owned {
+contract TestSpringToken is IERC20, IERC918, Ownable {
 
     uint256 public notifiedAllowance;
 
@@ -46,9 +47,9 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     uint8 public constant DECIMALS = 18;
 
-    uint256 public constant TOTAL_SUPPLY = 33112800 * 10 ** 18;
+    uint256 public constant TOTAL_SUPPLY = 33112800 * 10**18;
 
-    uint256 public constant INITIAL_REWARD = 168 * 10 ** 18;
+    uint256 public constant INITIAL_REWARD = 168 * 10**18;
 
     uint256 public constant MAX_REWARDS_AVAILABLE = 72; // no more than 72 rewards per mint
 
@@ -58,9 +59,9 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     uint256 public constant DURATION_OF_ERA = 3 * 365 * 24 * 60 * 60; // three years
 
-    uint256 public constant MINIMUM_TARGET = (2 ** uint256(233) * 9) / 13; // was 2**16
+    uint256 public constant MINIMUM_TARGET = (2**uint256(233) * 9) / 13; // was 2**16
 
-    uint256 public constant MAXIMUM_TARGET = 2 ** 234;
+    uint256 public constant MAXIMUM_TARGET = 2**234;
 
     uint256 public contractCreationTime;
 
@@ -69,7 +70,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     uint256 public maxNumberOfRewardsPerMint;
 
     bytes32 private challengeNumber;
-
+        
     uint256 private miningTarget;
 
     uint256 public tokensMinted;
@@ -80,9 +81,9 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
 
 
-    constructor() public {
+    constructor() {
 
-        miningTarget = MAXIMUM_TARGET / 2 ** 19;
+        miningTarget = MAXIMUM_TARGET / 2**19;
 
         contractCreationTime = block.timestamp;
         lastRewardBlockTime = block.timestamp;
@@ -104,51 +105,51 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     function mint(uint256 nonce) override public returns (bool success) {
 
         uint256 _lastRewardBlockTime = lastRewardBlockTime;
-
+        
         uint256 singleRewardAmount = _getMiningReward(_lastRewardBlockTime);
 
         // no more minting when reward reaches zero
         if (singleRewardAmount == 0) revert("Reward has reached zero");
 
         // the PoW must contain work that includes the challenge number and the msg.sender's address
-        bytes32 digest = keccak256(abi.encodePacked(challengeNumber, msg.sender, nonce));
+        bytes32 digest =  keccak256(abi.encodePacked(challengeNumber, msg.sender, nonce));
 
         uint256 _miningTarget = miningTarget;
         // the digest must be smaller than the target
         if (uint256(digest) > _miningTarget) revert("Digest is larger than mining target");
 
         uint256 _previousMaxNumberOfRewards = maxNumberOfRewardsPerMint;
-        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(_miningTarget / uint256(digest),
-            _lastRewardBlockTime,
-            _previousMaxNumberOfRewards,
-            block.timestamp);
+        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(_miningTarget / uint256(digest), 
+                                                               _lastRewardBlockTime,
+                                                               _previousMaxNumberOfRewards,
+                                                               block.timestamp);
         uint256 totalRewardAmount = singleRewardAmount * numberOfRewardsToGive;
 
         uint256 _tokensMinted = _giveRewards(totalRewardAmount);
-
+        
         _setNextMaxNumberOfRewards(numberOfRewardsToGive, _previousMaxNumberOfRewards);
 
         miningTarget = _adjustDifficulty(_miningTarget, _lastRewardBlockTime,
-            numberOfRewardsToGive, block.timestamp);
+                                         numberOfRewardsToGive, block.timestamp);
 
         bytes32 newChallengeNumber = _getNewChallengeNumber(_tokensMinted);
         challengeNumber = newChallengeNumber;
 
         lastRewardBlockTime = block.timestamp;
 
-        emit Mint(msg.sender, totalRewardAmount, _scheduledNumberOfRewards(block.timestamp),
-            newChallengeNumber);
+        emit Mint(msg.sender, totalRewardAmount, _scheduledNumberOfRewards(block.timestamp), 
+                  newChallengeNumber);
 
         return true;
     }
 
-    function _numberOfRewardsAvailable(uint256 _lastRewardBlockTime,
-        uint256 _previousMaxNumberOfRewards,
-        uint256 currentTime) public pure returns (uint256) {
+    function _numberOfRewardsAvailable(uint256 _lastRewardBlockTime, 
+                                       uint256 _previousMaxNumberOfRewards, 
+                                       uint256 currentTime) public pure returns (uint256) {
 
         uint256 numberAvailable = _previousMaxNumberOfRewards;
         uint256 intervalsSinceLastReward = (currentTime - _lastRewardBlockTime) / REWARD_INTERVAL;
-
+        
         if (intervalsSinceLastReward > numberAvailable)
             numberAvailable = intervalsSinceLastReward;
 
@@ -158,13 +159,13 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         return numberAvailable;
     }
 
-    function _numberOfRewardsToGive(uint256 numberEarned, uint256 _lastRewardBlockTime,
-        uint256 _previousMaxNumberOfRewards,
-        uint256 currentTime) public pure returns (uint256) {
+    function _numberOfRewardsToGive(uint256 numberEarned, uint256 _lastRewardBlockTime, 
+                                    uint256 _previousMaxNumberOfRewards,
+                                    uint256 currentTime) public pure returns (uint256) {
 
         uint256 numberAvailable = _numberOfRewardsAvailable(_lastRewardBlockTime,
-            _previousMaxNumberOfRewards,
-            currentTime);
+                                                         _previousMaxNumberOfRewards,
+                                                         currentTime);
         if (numberEarned < numberAvailable)
             return numberEarned;
 
@@ -179,8 +180,8 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         return _tokensMinted;
     }
 
-    function _setNextMaxNumberOfRewards(uint256 numberOfRewardsGivenNow,
-        uint256 _previousMaxNumberOfRewards) public {
+    function _setNextMaxNumberOfRewards(uint256 numberOfRewardsGivenNow, 
+                                        uint256 _previousMaxNumberOfRewards) public {
 
         // the value of the rewards given to this miner presumably exceed the gas costs
         // for processing the transaction. the next miner can submit a proof of enough work
@@ -197,19 +198,19 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
         bytes32 digest = keccak256(abi.encodePacked(challengeNumber, msg.sender, _nonce));
         require(digest == _challengeDigest, "Challenge digest does not match expected digest on token contract");
-
+        
         return mint(_nonce);
     }
 
     function _getNewChallengeNumber(uint256 _tokensMinted) public view returns (bytes32) {
-
+        
         // make the latest ethereum block hash a part of the next challenge
 
         // xor with a number unique to this token to avoid merged mining
-
+        
         // xor with the number of tokens minted to ensure that the challenge changes
         // even if there are multiple mints in the same ethereum block
-
+        
         return bytes32(uint256(blockhash(block.number - 1)) ^ _tokensMinted ^ TOKEN_IDENTIFIER);
     }
 
@@ -218,27 +219,25 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
         return (currentTime - contractCreationTime) / REWARD_INTERVAL;
     }
 
-    function _adjustDifficulty(uint256 _miningTarget,
-        uint256 _lastRewardBlockTime,
-        uint256 rewardsGivenNow,
-        uint256 currentTime) public pure returns (uint256){
+    function _adjustDifficulty(uint256 _miningTarget, 
+                               uint256 _lastRewardBlockTime, 
+                               uint256 rewardsGivenNow,
+                               uint256 currentTime) public pure returns (uint256){
 
         uint256 timeSinceLastReward = currentTime - _lastRewardBlockTime;
 
-        // we target a median interval of 10 minutes multiplied by log(2) ~ 61/88
+        // we target a median interval of 10 minutes multiplied by log(2) ~ 61/88 
         // this gives a mean interval of 10 minutes per reward
 
         if (timeSinceLastReward * 88 < rewardsGivenNow * REWARD_INTERVAL * 61)
-            _miningTarget = (_miningTarget * 99) / 100;
-        // slow down
+            _miningTarget = (_miningTarget * 99) / 100;   // slow down
         else
-            _miningTarget = (_miningTarget * 100) / 99;
-        // speed up
+            _miningTarget = (_miningTarget * 100) / 99;   // speed up
 
         if (_miningTarget < MINIMUM_TARGET)
             _miningTarget = MINIMUM_TARGET;
-
-        if (_miningTarget > MAXIMUM_TARGET)
+        
+        if (_miningTarget > MAXIMUM_TARGET) 
             _miningTarget = MAXIMUM_TARGET;
 
         return _miningTarget;
@@ -270,8 +269,8 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     }
 
     function getMiningTarget() public view override returns (uint256) {
-        return miningTarget;
-    }
+       return miningTarget;
+   }
 
     function getMiningReward() public view override returns (uint256) {
 
@@ -281,24 +280,24 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     }
 
     function _getMiningReward(uint256 _time) public view returns (uint256) {
-        return INITIAL_REWARD / 2 ** rewardEra(_time);
+        return INITIAL_REWARD / 2**rewardEra(_time);
     }
 
     function getNumberOfRewardsAvailable(uint256 currentTime) external view returns (uint256) {
-        return _numberOfRewardsAvailable(lastRewardBlockTime,
-            maxNumberOfRewardsPerMint,
-            currentTime);
+        return _numberOfRewardsAvailable(lastRewardBlockTime, 
+                                         maxNumberOfRewardsPerMint, 
+                                         currentTime);
     }
 
     function getRewardAmountForAchievingTarget(uint256 targetAchieved, uint256 currentTime) external view returns (uint256) {
-        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(miningTarget / targetAchieved,
-            lastRewardBlockTime,
-            maxNumberOfRewardsPerMint,
-            currentTime);
+        uint256 numberOfRewardsToGive = _numberOfRewardsToGive(miningTarget / targetAchieved, 
+                                                               lastRewardBlockTime, 
+                                                               maxNumberOfRewardsPerMint, 
+                                                               currentTime);
         return _getMiningReward(currentTime) * numberOfRewardsToGive;
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public pure override returns (uint8) {
         return DECIMALS;
     }
 
@@ -333,10 +332,10 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     // ------------------------------------------------------------------------
 
     function transfer(address to, uint256 tokens) public override returns (bool success) {
-
+        
         require(to != address(0), "Invalid address");
         // was require(to != address(0) && to != address(this), "Invalid address");
-
+        
         balances[msg.sender] = balances[msg.sender] - tokens;
 
         balances[to] = balances[to] + tokens;
@@ -364,7 +363,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     // ------------------------------------------------------------------------
 
     function approve(address spender, uint256 tokens) public override returns (bool success) {
-
+        
         require(spender != address(0) && spender != address(this), "Invalid address");
 
         allowed[msg.sender][spender] = tokens;
@@ -381,7 +380,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     // Allow token owner to cancel the approval if the approved amount changes from its last
 
-    // known value before this transaction is processed. This allows the owner to avoid
+    // known value before this transaction is processed. This allows the owner to avoid 
 
     // unintentionally re-approving funds that have already been spent.
 
@@ -390,7 +389,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     function safeApprove(address spender, uint256 previousAllowance, uint256 newAllowance) external returns (bool success) {
 
         require(allowed[msg.sender][spender] == previousAllowance,
-            "Current spender allowance does not match specified value");
+                "Current spender allowance does not match specified value");
 
         return approve(spender, newAllowance);
     }
@@ -416,7 +415,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     // ------------------------------------------------------------------------
 
     function transferFrom(address from, address to, uint256 tokens) public override returns (bool success) {
-
+        
         require(to != address(0) && to != address(this), "Invalid address");
 
         balances[from] = balances[from] - tokens;
@@ -461,7 +460,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     // ------------------------------------------------------------------------
 
     function approveAndCall(address spender, uint256 tokens, bytes memory data) public returns (bool success) {
-
+        
         // was require(spender != address(0) && spender != address(this), "Invalid address");
         // approvals to the test contract are allowed for testing
         require(spender != address(0), "Invalid address");
@@ -470,7 +469,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
         emit Approval(msg.sender, spender, tokens);
 
-        ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, address(this), data);
+        IApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, address(this), data);
 
         return true;
 
@@ -484,10 +483,10 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
     // ------------------------------------------------------------------------
 
     function safeApproveAndCall(address spender, uint256 previousAllowance,
-        uint256 newAllowance, bytes calldata data) external returns (bool success) {
+                                uint256 newAllowance, bytes memory data) external returns (bool success) {
 
         require(allowed[msg.sender][spender] == previousAllowance,
-            "Current spender allowance does not match specified value");
+                "Current spender allowance does not match specified value");
 
         return approveAndCall(spender, newAllowance, data);
     }
@@ -501,12 +500,12 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     function transferAnyERC20Token(address tokenAddress, uint256 tokens) external onlyOwner returns (bool success) {
 
-        return ERC20Interface(tokenAddress).transfer(owner, tokens);
+        return IERC20(tokenAddress).transfer(owner(), tokens);
 
     }
 
 
-    // functions for unit testing
+    // functions for unit testing    
 
     function setMaxNumberOfRewards(uint256 _maxNumberOfRewards) public {
         maxNumberOfRewardsPerMint = _maxNumberOfRewards;
@@ -526,11 +525,7 @@ contract TestSpringToken is ERC20Interface, ERC918, Owned {
 
     function receiveApproval(address from, uint256 tokens, address token, bytes memory data) public {
         notifiedAllowance = tokens;
-        from;
-        tokens;
-        token;
-        data;
-        // suppress compiler warnings about unused variables
+        from; tokens; token; data;  // suppress compiler warnings about unused variables
     }
 
 
