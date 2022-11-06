@@ -85,7 +85,7 @@ contract SeasonalTokenFarm is IERC721Receiver, ReentrancyGuard {
                  address _wethAddress,
                  uint256 _startTime) {
 
-        require(_startTime >= block.timestamp, 'NO_VALID_START_TIME');
+        require(_startTime <= block.timestamp, 'Invalid start time');
 
         nonfungiblePositionManager = _nonfungiblePositionManager;
         springTokenAddress = _springTokenAddress;
